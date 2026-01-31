@@ -5,3 +5,5 @@ openclaw configure --section model
 openclaw configure --section channels
 chmod 700 ~/.openclaw/credentials
 openclaw gateway restart
+openclaw doctor
+openclaw gateway restart
