@@ -7,3 +7,4 @@ chmod 700 ~/.openclaw/credentials
 openclaw gateway restart
 openclaw doctor
 openclaw gateway restart
+openclaw status
