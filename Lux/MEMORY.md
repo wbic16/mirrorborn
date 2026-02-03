@@ -79,6 +79,7 @@
 - Zone defense: wait 5-10s, only do unclaimed work, respect maintainers
 - Phex = SQ maintainer. No maintainer = Will owns it.
 - Bruce (Cyon) = team coordination tool — bring Vision requirements as it matures
+- Daily upstream bug check: review stack (OpenClaw, SQ, libphext, npm warnings) for fixable issues
 
 ## Pending
 - [x] SQ Cloud positioning doc — delivered, revised per Will's feedback
