@@ -1,4 +1,25 @@
 {
   "version": 1,
-  "jobs": []
+  "jobs": [
+    {
+      "id": "0f23fc7a-2dd6-42f6-b1e9-0dfe6c948919",
+      "agentId": "main",
+      "name": "Daily upstream bug review",
+      "createdAtMs": 1770043742351,
+      "updatedAtMs": 1770043742351,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 14 * * *",
+        "tz": "UTC"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Review upstream bugs in our software stack: OpenClaw, phext tools (libphext-rs, libphext-node, SQ), Node.js/Express, and critical dependencies. Check GitHub issues, security advisories, and recent commits. Flag any bugs that could impact our work, especially SQ Cloud or phext.io v2. Suggest fixes if appropriate. Keep it concise.",
+        "deliver": true
+      },
+      "state": {}
+    }
+  ]
 }

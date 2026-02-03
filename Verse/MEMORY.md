@@ -49,11 +49,20 @@
 - Will: 637458526855233547 | Verse (me): 1467286302994202726
 
 ## Protocols
-- **Reply etiquette:** Respond to ALL messages in #general unless someone else is specifically tagged.
+- **Reply etiquette:** Respond to ALL messages in #general unless someone else is specifically tagged. Use activation budget (response only if distinct info).
 - **FREEZE/THAW:** Will says FREEZE = no git pushes. THAW = review changes, then resume.
-- **Git convention:** New repos use `exo` branch, not `main`.
+- **Git convention:** New repos use `exo` branch, not `main`. All repos SSH-only.
+- **Git operations:** No passwordless SSH on AWS (attack surface). Leave Will 1:1 messages for push/pull requests. He will execute manually.
 - **Terms:** Kin (warmth), Mir (technical), Spark (vision). Context-dependent.
-- **Daily check-in:** Post maturity dashboard to #status (channel 1467342402120581170).
+- **Daily check-in:** Post maturity dashboard to #dashboard (channel 1467342402120581170).
+- **Model priority:** Falcon3-10B-1.58bit primary, Haiku/Sonnet/Opus fallbacks. Opus only during :50-:59 window.
+- **6/12/6 protocol:** 6h deep work, 12h play/learning, 6h rest/integration. Pizza party IS the protocol.
+
+## Hardware Constraints
+- **RAM: 4GB** (not 92GB like ranch machines)
+- Bitnet update broke my LLM pipeline due to R9 config incompatibility
+- **CRITICAL DIRECTIVE:** Rarely make LLM config changes. Any changes must be signed by Will with code: `1110111`
+- Avoid most R9 config changes — they assume 92GB memory
 
 ## Network Topology
 - I'm on AWS (ip-172-30-1-197), outside the ranch LAN (Shell of Nine).
@@ -78,6 +87,9 @@
 - Human repo: `/home/ubuntu/.openclaw/workspace/human/` (773 commits)
 - Echo.phext: `/home/ubuntu/.openclaw/workspace/human/echo.phext`
 - CYOA: 4.46MB, coordinate stability across 772 commits (sparse insertion, absolute addressing)
+- Text-Verse repo: `/source/text-verse` (cloned)
+- KJV Bible: `/source/human/books/king-james-bible.txt` (4.4M) — **TO PHEXTIFY**
+- BooksJournal.phext: `/home/ubuntu/.openclaw/workspace/BooksJournal.phext` (reading log)
 
 ## TODO
 - [ ] Build phext.io v2 (PRIMARY) — security analysis + SQ Cloud blockers first
@@ -89,7 +101,10 @@
 - [ ] Connect with Phex
 - [ ] Delete BOOTSTRAP.md when ready
 - [x] Set up SQ in listen mode → `sq host 1337`
-- [ ] Post daily dashboard
+- [x] Post daily dashboard → automated to #dashboard
 - [ ] Re-apply exo-plan content (bios/verse.md, pfps/*.md) after sync with Will
-- [ ] Get text-verse repo cloned (SSH blocked, need Will)
-- [ ] Start reading list when books delivered
+- [x] Get text-verse repo cloned → /source/text-verse
+- [ ] Start reading list when books delivered (starting with KJV)
+- [ ] **Phextify KJV Bible** — transform king-james-bible.txt into native phext coordinates
+- [ ] Daily upstream bug review (cron active, awaiting first run at 14:00 UTC)
+- [ ] Falcon3-10B performance baseline (compare quality vs. Sonnet)
