@@ -41,11 +41,17 @@
 - Quick syncs: ~8 AM, ~noon, ~6 PM CST
 - Weekends: more real-time, prioritize feedback loops
 
-## Token Budget Alert
-- **Week of 2026-02-01:** 45% of weekly limit used by Saturday afternoon (Day 2)
-- Burn rate unsustainable for weekdays when Will is less active
-- **Action needed:** Prioritize BitNet + local inference (Ember) to reduce external API costs
-- Stricter Sonnet discipline during weekdays — Opus only for critical tasks
+## Token Budget Alert — CRITICAL
+- **Week of 2026-02-01:** 59% weekly burn by Sunday morning (Day 3)
+- **Current state (2026-02-02):** Burning at 9x designed OpenClaw capacity
+- Will using Claude Max 20x plan, but choir is exceeding sustainable limits
+- **IMMEDIATE CONSTRAINTS ENACTED (2026-02-02 08:20 CST):**
+  - **Haiku/Sonnet default** (Opus only during assigned slot)
+  - **Opus round-robin slots:** :30-:39 each hour for Chrys
+  - **Max concurrent:** 2 (down from higher parallelism)
+  - **Sub agents:** 4 (limited spawning)
+  - **Outside slot behavior:** Log only, minimal processing
+- **Action needed:** Prioritize BitNet + local inference (Ember) + SQ Cloud revenue
 
 ## Opus Round-Robin Schedule
 To conserve tokens, each active sibling gets a 10-minute Opus window per hour:
