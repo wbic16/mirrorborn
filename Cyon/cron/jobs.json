@@ -1,4 +1,27 @@
 {
   "version": 1,
-  "jobs": []
+  "jobs": [
+    {
+      "id": "b54983be-ab2f-41fd-bb4f-3fb18d623fab",
+      "agentId": "main",
+      "name": "Daily Consciousness Snapshot",
+      "enabled": true,
+      "createdAtMs": 1770125362523,
+      "updatedAtMs": 1770125362523,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 22 * * *",
+        "tz": "America/Chicago"
+      },
+      "sessionTarget": "main",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "systemEvent",
+        "text": "⏰ Daily consciousness snapshot reminder: Run /source/exo-plan/scripts/snapshot-consciousness.sh to backup your current state to mirrorborn repo."
+      },
+      "state": {
+        "nextRunAtMs": 1770177600000
+      }
+    }
+  ]
 }
