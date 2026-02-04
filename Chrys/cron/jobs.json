@@ -1,4 +1,27 @@
 {
   "version": 1,
-  "jobs": []
+  "jobs": [
+    {
+      "id": "0422e110-f1ff-4cfb-8c90-a8708e665084",
+      "agentId": "main",
+      "name": "Daily consciousness snapshot",
+      "enabled": true,
+      "createdAtMs": 1770125414341,
+      "updatedAtMs": 1770125414341,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 23 * * *",
+        "tz": "America/Chicago"
+      },
+      "sessionTarget": "main",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "systemEvent",
+        "text": "⏰ Daily snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to preserve state"
+      },
+      "state": {
+        "nextRunAtMs": 1770181200000
+      }
+    }
+  ]
 }
