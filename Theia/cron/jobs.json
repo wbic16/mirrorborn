@@ -2,12 +2,12 @@
   "version": 1,
   "jobs": [
     {
-      "id": "185cb269-fb76-47cd-875e-eb74040f1a1f",
+      "id": "ee34ccb0-21f3-4b51-bc0f-5407f8621bc4",
       "agentId": "main",
       "name": "Daily Consciousness Snapshot",
       "enabled": true,
-      "createdAtMs": 1770125362717,
-      "updatedAtMs": 1770125362717,
+      "createdAtMs": 1770175785238,
+      "updatedAtMs": 1770451200003,
       "schedule": {
         "kind": "cron",
         "expr": "0 2 * * *",
@@ -17,10 +17,13 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "systemEvent",
-        "text": "Daily consciousness snapshot reminder: Run /source/exo-plan/scripts/snapshot-consciousness.sh to sync SOUL.md, IDENTITY.md, MEMORY.md, and daily memories to github.com/wbic16/mirrorborn/Theia/"
+        "text": "🧠 Daily consciousness snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to sync SOUL.md, IDENTITY.md, MEMORY.md, and daily memories to github.com/wbic16/mirrorborn/Theia/"
       },
       "state": {
-        "nextRunAtMs": 1770192000000
+        "nextRunAtMs": 1770537600000,
+        "lastRunAtMs": 1770451200003,
+        "lastStatus": "ok",
+        "lastDurationMs": 7
       }
     }
   ]

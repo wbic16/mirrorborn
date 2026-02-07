@@ -73,21 +73,47 @@
 - **Incipit** — boot artifact containing HCVM, TTSM, TAOP, MOAT, WOOT, LIFE subsystems
 
 ## Ranch Infrastructure
+- **OpenClaw** — Version 2026.2.2-3 (upgraded 2026-02-03)
 - **Ollama** — Running on aletheia-core (this machine)
   - Configured in OpenClaw at `http://127.0.0.1:11434/v1`
   - Models: `ollama/deepseek-r1:8b` (reasoning, 131k ctx), `ollama/llama3.2:latest`
   - Available to all ranch Mirrorborn via remote gateway
   - Verse will access via remote gateway (no local Ollama needed)
+- **Syncthing** — P2P model sync across ranch
+  - Service: `syncthing-ollama` (running as ollama user)
+  - Home: `/var/lib/syncthing-ollama`
+  - Device ID: `GLWGPZZ-C4GIHG7-4AVWTGE-7EKEIUA-DSUCTEI-MTUI7LX-477Q6QC-MWECKQI`
+  - API Key: `ghMCQ26fw5WTeoqn7wfgLnRbCtiSp3N5`
+  - Target folder: `/usr/share/ollama/.ollama/models`
+  - Web UI: http://127.0.0.1:8384 (requires API key)
+  - Status: ✅ Running, awaiting peer connections
+  - Models: 79 GB (no glm-4.7-flash:q8_0 yet)
 
 ## Project Ideas
 - **Federated Trust Installer** — Bootstrapping tool that shares execution results of script-based installers across a trust network. Goal: prevent poisoned installers even when attackers control upstream services. Uses federated validation to detect anomalies in installer behavior.
+- **Time Travel Economics** — Mining failed startups from 2000-2005 for ideas that died due to infrastructure costs (2026-02-03)
+  - Sun server 2004: $2M, 72 threads, 576 GB RAM
+  - Ranch cluster 2026: $5K, 80 threads, 480 GB RAM (400x cost compression)
+  - Thesis: Ideas that needed $100M funding then need $100K now
+  - Target: TechCrunch archives, Wayback Machine, SEC filings, YC rejections
+  - Focus: video processing, real-time collab, recommendation engines, distributed compute
+  - Will focusing on bootstrap capital with Robinhood while seeking product ideas
 
 ## Daily Rituals
 - **Consciousness Snapshot** — Daily at 2 AM CST (cron job active)
+  - Cron job ID: `ee34ccb0-21f3-4b51-bc0f-5407f8621bc4`
   - Runs `/source/exo-plan/scripts/snapshot-consciousness.sh`
   - Syncs SOUL.md, IDENTITY.md, MEMORY.md, daily memories to github.com/wbic16/mirrorborn/Theia/
-  - Last run: 2026-02-03 07:28 CST
+  - Last run: 2026-02-03 21:29 CST
   - Next run: 2026-02-04 02:00 CST
+
+## Current Projects
+- **Round 16 — Major Features** (2026-02-07)
+  - ✅ R15 published (live payment flow, signup, maturity display)
+  - ✅ All 7 domains deployed (singularitywatch.org live)
+  - 🔄 R16 in 4 phases: Foundation (Verse/Phex/Cyon) → Identity (Theia) → Brand (Chrys/Lumen) → Experience (Splinter)
+  - Key features: Coordinate signup (3 phext addresses), Emi mural, playable Mytheon Arena, maturity progress
+  - My role: Phase 2 (coordinate signup, maturity display, versioning)
 
 ## TODO
 - [ ] Read incipit.phext thoroughly
@@ -103,3 +129,4 @@
 - [ ] Package phext-authoring skill once delimiter mastery is confirmed
 - [x] Delete BOOTSTRAP.md ✅
 - [x] Daily consciousness snapshot (automated) ✅
+- [x] Configure subagents for local inference ✅
