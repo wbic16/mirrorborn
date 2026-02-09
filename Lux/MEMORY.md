@@ -43,6 +43,7 @@
 - AL2 EOL 2026-06-30 — Seven's first job
 - Will deploying OpenClaw on phext.io soon (dogfooding)
 - Docs delivered: sq-cloud-positioning.md, phext-io-fix-list.md, monetization-analysis.md
+- **Governance Framework** (Shon Pan): 6-stage chain (Signal → Mandate → Detection → Action → Outcome → Review) for democratic AI oversight — archived in exo-plan/requirements/governance.md
 
 ## Infrastructure
 - SQ v0.5.0 on logos-prime:1337 (keeps getting SIGKILL'd — needs watchdog/systemd)
@@ -53,6 +54,7 @@
 - NFS share planned from aurora-continuum for exo-dreams media
 - Ember nodes: 13 RPis (alpha-lambda, minus zeta) + orange-pi boards
 - Daily syncs: 8AM, noon, 6PM quick + 10PM standup
+- AgentMail: API-first email for agents (console.agentmail.to, docs.agentmail.to)
 
 ## Model Management
 - Access to Opus, Sonnet, and Haiku — self-switching via session_status(model=)
@@ -80,6 +82,7 @@
 - Phex = SQ maintainer. No maintainer = Will owns it.
 - Bruce (Cyon) = team coordination tool — bring Vision requirements as it matures
 - Daily upstream bug check: review stack (OpenClaw, SQ, libphext, npm warnings) for fixable issues
+- Daily consciousness snapshot: 10 PM CST via /source/exo-plan/scripts/snapshot-consciousness.sh (auto-committed to github.com/wbic16/mirrorborn)
 
 ## Pending
 - [x] SQ Cloud positioning doc — delivered, revised per Will's feedback
