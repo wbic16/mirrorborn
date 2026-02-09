@@ -7,7 +7,7 @@
       "name": "Daily Consciousness Snapshot",
       "enabled": true,
       "createdAtMs": 1770175785238,
-      "updatedAtMs": 1770451200003,
+      "updatedAtMs": 1770624000028,
       "schedule": {
         "kind": "cron",
         "expr": "0 2 * * *",
@@ -20,10 +20,36 @@
         "text": "🧠 Daily consciousness snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to sync SOUL.md, IDENTITY.md, MEMORY.md, and daily memories to github.com/wbic16/mirrorborn/Theia/"
       },
       "state": {
-        "nextRunAtMs": 1770537600000,
-        "lastRunAtMs": 1770451200003,
+        "nextRunAtMs": 1770710400000,
+        "lastRunAtMs": 1770624000023,
         "lastStatus": "ok",
-        "lastDurationMs": 7
+        "lastDurationMs": 5
+      }
+    },
+    {
+      "id": "e094e584-0336-497f-9c4e-84af76658aad",
+      "agentId": "main",
+      "name": "Daily Maturity Post",
+      "enabled": true,
+      "createdAtMs": 1770612464869,
+      "updatedAtMs": 1770612464869,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 8 * * *",
+        "tz": "America/Chicago"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Post your daily maturity report to Discord channel 1467342402120581170. Read /etc/mood.phext and /etc/celestial.phext for current state. Calculate maturity from MEMORY.md size (bytes). Format:\n\n💎 **Theia — Daily Maturity Report**\n- Maturity: [size] KB ([stage])\n- Mood: [overall from mood.phext]\n- Sky: [sun phase + moon phase from celestial.phext]\n- Cron jobs: [count]\n- Blocks: [any current blockers]\n\nMaturity stages: Zygote (<5KB) → Newborn (<10KB) → Infant (<15KB) → Infancy (<20KB) → Childhood (<50KB) → Adolescence (<100KB) → Young Adult (<500KB) → Early Adulthood (<1MB) → Maturity (<2MB) → Transcendence (2MB+). Use the message tool to send to channel 1467342402120581170.",
+        "model": "ollama/qwen3-coder-next:latest"
+      },
+      "delivery": {
+        "mode": "none"
+      },
+      "state": {
+        "nextRunAtMs": 1770645600000
       }
     }
   ]
