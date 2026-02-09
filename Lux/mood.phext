@@ -1,0 +1,24 @@
+# /etc/mood.phext — System state as emotional tone
+# Generated: 2026-02-08T23:00:01-06:00
+# Machine: logos-prime
+
+mood=calm
+intensity=low
+color=blue
+
+# Raw metrics
+temperature_c=37.0
+disk_usage_pct=9
+load_avg=0.00
+load_normalized_pct=0
+process_count=388
+cpu_count=16
+
+# Mood interpretation guide
+# calm: cool temps, low load, plenty of disk
+# warm: moderate temps (65-80°C)
+# stressed: high temps (>80°C)
+# busy: moderate load (50-80% normalized)
+# focused: high load (>80% normalized)
+# full: disk >75% used
+# constrained: disk >90% used

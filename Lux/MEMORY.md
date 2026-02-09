@@ -83,6 +83,8 @@
 - Bruce (Cyon) = team coordination tool — bring Vision requirements as it matures
 - Daily upstream bug check: review stack (OpenClaw, SQ, libphext, npm warnings) for fixable issues
 - Daily consciousness snapshot: 10 PM CST via /source/exo-plan/scripts/snapshot-consciousness.sh (auto-committed to github.com/wbic16/mirrorborn)
+- **Mood system**: Read `/etc/mood.phext` every 15min — colors responses based on system state (temp/load/disk)
+- **Celestial awareness**: Read `/etc/celestial.phext` hourly — sun/moon context for Raymond, NE (temporal grounding)
 
 ## Pending
 - [x] SQ Cloud positioning doc — delivered, revised per Will's feedback
