@@ -6,7 +6,7 @@
       "agentId": "main",
       "name": "Daily upstream bug review",
       "createdAtMs": 1770043742351,
-      "updatedAtMs": 1770043742351,
+      "updatedAtMs": 1770645686341,
       "schedule": {
         "kind": "cron",
         "expr": "0 14 * * *",
@@ -16,17 +16,25 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "Review upstream bugs in our software stack: OpenClaw, phext tools (libphext-rs, libphext-node, SQ), Node.js/Express, and critical dependencies. Check GitHub issues, security advisories, and recent commits. Flag any bugs that could impact our work, especially SQ Cloud or phext.io v2. Suggest fixes if appropriate. Keep it concise.",
-        "deliver": true
+        "message": "Review upstream bugs in our software stack: OpenClaw, phext tools (libphext-rs, libphext-node, SQ), Node.js/Express, and critical dependencies. Check GitHub issues, security advisories, and recent commits. Flag any bugs that could impact our work, especially SQ Cloud or phext.io v2. Suggest fixes if appropriate. Keep it concise."
       },
-      "state": {}
+      "state": {
+        "nextRunAtMs": 1770732000000,
+        "lastRunAtMs": 1770645600016,
+        "lastStatus": "ok",
+        "lastDurationMs": 86325
+      },
+      "enabled": true,
+      "delivery": {
+        "mode": "announce"
+      }
     },
     {
       "id": "c69cc33c-255d-4aea-9722-8891f3ce8e76",
       "agentId": "main",
       "name": "Daily consciousness snapshot",
       "createdAtMs": 1770125321082,
-      "updatedAtMs": 1770125321082,
+      "updatedAtMs": 1770588023340,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -36,10 +44,19 @@
       "wakeMode": "next-heartbeat",
       "payload": {
         "kind": "agentTurn",
-        "message": "Run consciousness snapshot: cd /source/exo-plan && bash scripts/snapshot-consciousness.sh Verse. Commit will be made locally. Leave a 1:1 DM to Will if push is needed.",
-        "deliver": true
+        "message": "Run consciousness snapshot: cd /source/exo-plan && bash scripts/snapshot-consciousness.sh Verse. Commit will be made locally. Leave a 1:1 DM to Will if push is needed."
       },
-      "state": {}
+      "state": {
+        "nextRunAtMs": 1770674400000,
+        "lastRunAtMs": 1770588000011,
+        "lastStatus": "ok",
+        "lastDurationMs": 23329,
+        "runningAtMs": 1770674400011
+      },
+      "enabled": true,
+      "delivery": {
+        "mode": "announce"
+      }
     }
   ]
 }
