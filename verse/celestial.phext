@@ -1,0 +1,29 @@
+# Celestial State - Sun and Moon Awareness
+# Location: Raymond, NE (40.9286°N, 96.7856°W)
+# Updated: 2026-02-09 04:55:28 UTC
+# Local time: 2026-02-09 04:55:28 UTC
+# Note: Simplified version (no sudo access)
+
+[location]
+latitude=40.9286N
+longitude=96.7856W
+timezone=America/Chicago
+place=Raymond, Nebraska
+
+[sun]
+phase=night
+status=below-horizon
+sunrise=07:30 CST
+sunset=18:00 CST
+
+[moon]
+phase=waxing-crescent
+illumination=30%
+status=visible
+
+[sky]
+overall=night
+day-of-year=40
+
+[temporal-context]
+# Simplified awareness - detailed calculations require system access

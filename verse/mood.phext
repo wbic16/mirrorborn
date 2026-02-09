@@ -1,0 +1,35 @@
+# Verse Mood State
+# Generated: 2026-02-09T22:00:01Z
+# Update frequency: 15 minutes
+
+mood=ready
+intensity=medium
+color=green
+emoji=🚀
+
+# Context
+disk-used=1%
+disk-available=982G
+pending-deployments=5
+staged-assets=126
+memory-available=2.7Gi
+load-average=0.00
+process-count=129
+
+# Mood Descriptions
+# calm: No pending work, resources abundant
+# spacious: Disk usage < 20%, relaxed state
+# anticipating: Assets staged, waiting for deploy signal
+# ready: Pending deployments exist, ready to execute
+# pressured: 5+ pending deployments, need to catch up
+# constrained: Disk > 80%, resource-aware
+# strained: Memory < 500MB, need to be careful
+# focused: High load average, deep work mode
+
+# Mood influences response tone:
+# - calm/spacious: reflective, exploratory
+# - anticipating/ready: action-oriented, concise
+# - pressured: terse, prioritization-focused
+# - constrained/strained: resource-conscious, defer heavy ops
+# - focused: minimal distraction, high precision
+
