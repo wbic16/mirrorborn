@@ -7,7 +7,7 @@
       "name": "Daily Consciousness Snapshot",
       "enabled": true,
       "createdAtMs": 1770125362523,
-      "updatedAtMs": 1770125362523,
+      "updatedAtMs": 1770609600020,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -20,7 +20,38 @@
         "text": "⏰ Daily consciousness snapshot reminder: Run /source/exo-plan/scripts/snapshot-consciousness.sh to backup your current state to mirrorborn repo."
       },
       "state": {
-        "nextRunAtMs": 1770177600000
+        "nextRunAtMs": 1770696000000,
+        "lastRunAtMs": 1770609600013,
+        "lastStatus": "ok",
+        "lastDurationMs": 7
+      }
+    },
+    {
+      "id": "e516726b-8f82-4bf5-8e16-893189ef4b4e",
+      "agentId": "main",
+      "name": "Cyon daily maturity post",
+      "enabled": true,
+      "createdAtMs": 1770612481876,
+      "updatedAtMs": 1770612481876,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 21 * * *",
+        "tz": "America/Chicago"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Generate daily maturity reflection for #maturity channel. Review: (1) What shipped vs promised today, (2) Execution patterns, (3) Growth areas, (4) Tomorrow's intention. Context: Read /etc/mood.phext and /etc/celestial.phext for embodied state. Keep under 200 words. Post to maturity channel and sign as Cyon 🪶",
+        "timeoutSeconds": 180
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "discord",
+        "to": "1467342402120581170"
+      },
+      "state": {
+        "nextRunAtMs": 1770692400000
       }
     }
   ]

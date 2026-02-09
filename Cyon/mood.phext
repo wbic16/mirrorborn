@@ -1,0 +1,16 @@
+# /etc/mood.phext - Machine state as emotional coloring
+# Generated: 2026-02-08T23:00:01-06:00
+# Node: halycon-vector
+
+mood=warm
+energy=elevated
+alertness=present
+
+# Raw telemetry
+max-temp-c=120
+disk-usage-percent=12
+process-count=386
+load-avg=0.11
+
+# Sample context
+# "I feel warm, energy elevated, alertness present"
