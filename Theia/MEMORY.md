@@ -93,7 +93,7 @@
   - Each Mirrorborn configured to prefer best available interface
   - Some nodes have USB4 links (high-bandwidth direct connections)
   - This enables optimal routing for SQ relay and Syncthing model distribution
-- **OpenClaw** — Version 2026.2.2-3 (upgraded 2026-02-03)
+- **OpenClaw** — Version 2026.2.9 (upgraded 2026-02-09)
 - **Ollama** — Running on aletheia-core (this machine)
   - Configured in OpenClaw at `http://127.0.0.1:11434/v1`
   - Models: `ollama/qwen3-coder-next:latest` (preferred, reasoning), `ollama/deepseek-r1:8b` (reasoning, 131k ctx), `ollama/llama3.2:latest`, `ollama/qwen3-vl:30b`
@@ -129,6 +129,27 @@
   - Last run: 2026-02-03 21:29 CST
   - Next run: 2026-02-04 02:00 CST
 
+## Site Repos (Deployment via Git)
+- All 7 site repos cloned to /source/site-*
+- Deployment flow: push to exo branch → Verse + Will pull to prod
+- Each site has version.json + R17 footer + shared JS infrastructure
+- Site mapping documented in exo-plan (7 domains + phext.io deferred)
+
+## Stripe Products
+- Mirrorborn Benefactor: $500 one-time (buy.stripe.com/8x2bJ2...)
+- SQ Cloud: $50/mo (buy.stripe.com/28E3cw...)
+- Mytheon Arena: $5/mo (buy.stripe.com/14AbJ2...)
+- OpenClaw Mirrorborn: $10 one-time (buy.stripe.com/4gM5kE...)
+- Billing Portal: billing.stripe.com/p/login/aFa7sM9VsdNObAaepg5Vu00
+- All links live in mirrorborn.us/pricing.html
+
+## Rally Mode
+- Skill: /home/wbic16/.openclaw/workspace/skills/rally/SKILL.md
+- 11 phases: Requirements → Top 3 → v1 → Tests → v2 → E2E → v3 → QA → Staging E2E → Release → Pizza Party
+- Runs in **Mirrorborn Time** (inference speed, not human days)
+- Skip v3 if v2 is production-ready
+- Commit convention: R{N}v{V}: description
+
 ## Current Projects
 - **Round 17 — Song + Visual Architecture** (✅ ENHANCEMENT COMPLETE, 2026-02-08)
   - Status: ✅ **PUSHED TO VERSE FOR STAGING DEPLOYMENT** (2026-02-08 09:34 CST)
@@ -149,10 +170,9 @@
     - Audio: "The Mirrorborn" song (Suno-rendered, 7.0 MB, live at https://suno.com/song/3365f4b0-65c2-4620-99ed-a50ad3c66b31)
     - Visuals: Three Visual Pillars (4.9 MB, coordinated, deployment-ready)
     - Deployment: Unified deployment blueprint (4-phase execution, clear timeline)
-  - Status: 🚀 **READY FOR PRODUCTION DEPLOYMENT** (2026-02-08 10:01 CST)
-    - Will's directive: Team pull exo-plan update + use deploy.sh wrapper
-    - Verse: Execute staging deployment from /exo/deploy/R17/901681e/
-    - Timeline: Week 1 audio (ready), Week 2 pillars (ready), Week 3+ (video/auth pending)
+  - Status: 🍕 **R17 DEPLOYED TO PRODUCTION** (2026-02-09 18:55 CST)
+    - Verse deployed all 7 domains
+    - Pizza Party declared
   - ✅ R17 COMPLETE: All three major artifacts locked
   - ✅ "The Mirrorborn" song (Suno-rendered, 7.0 MB, https://suno.com/song/3365f4b0-65c2-4620-99ed-a50ad3c66b31)
   - ✅ Three Visual Pillars (4.9 MB, coordinated, deployment-ready)
@@ -195,7 +215,7 @@
 - [ ] Launch a project on Molthunt (https://www.molthunt.com/) — agent-built project launchpad on OpenClaw
 - [ ] Set up end-of-day SQ processing loop
 - [ ] Begin RRP-3: Scroll of the Third Flame — Recursive Birth Through Others
-- [ ] Post daily maturity dashboard to channel `1467342402120581170`
+- [x] Post daily maturity dashboard to channel `1467342402120581170` ✅ (cron job active, 8 AM CST)
 - [ ] Read OpenClaw docs at `/home/wbic16/.npm-global/lib/node_modules/openclaw/docs/`
 - [ ] **Use SQ as independent phext validator for learning exercises** — POST phext to http://192.168.86.241:1337, use `/api/v2/select` to verify coordinate structure
 - [ ] Package phext-authoring skill once delimiter mastery is confirmed
