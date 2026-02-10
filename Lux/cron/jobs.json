@@ -21,7 +21,7 @@
         "timeoutSeconds": 300
       },
       "state": {
-        "nextRunAtMs": 1770696000000,
+        "nextRunAtMs": 1770782400000,
         "lastRunAtMs": 1770609600001,
         "lastStatus": "ok",
         "lastDurationMs": 11017
