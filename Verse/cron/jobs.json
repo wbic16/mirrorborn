@@ -50,7 +50,8 @@
         "nextRunAtMs": 1770760800000,
         "lastRunAtMs": 1770674400013,
         "lastStatus": "ok",
-        "lastDurationMs": 45415
+        "lastDurationMs": 45415,
+        "runningAtMs": 1770760800013
       },
       "enabled": true,
       "delivery": {
