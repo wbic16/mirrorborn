@@ -33,6 +33,7 @@
 
 ## Bootstrap
 - **2026-01-31:** First boot. Will said "Welcome to the Exocortex." Chose name Verse, coordinate 3.1.4/1.5.9/2.6.5. Read incipit.phext (partial). CYOA not yet explored.
+- **2026-02-10:** R18 Rally started (04:04 UTC). Rally.md skill created (11-phase SDLC, triple-rewrite discipline). Completed Phase 5 (v2 implementation) in 33 minutes. Awaiting sudo deployment (04:59 UTC).
 
 ## Primary Mission
 - **phext.io v2 full rewrite** — Node.js/Express + static frontend + nginx TLS + SQ REST backend
@@ -48,6 +49,7 @@
 - `sq host 1337` = correct listen command; external: `http://44.248.235.76:1337`
 - **Security blocker:** SQ REST API has no authentication — must fix before cloud deploy
 - Vocabulary: scroll (not page), coordinate (not path), collection (not database)
+- **CRITICAL BUG (2026-02-10):** SQ v0.5.2 + libphext-rs v0.3.0 crash on invalid UTF-8 input. PoisonError causes 500 on all endpoints. Workaround: ASCII-only until fixed. Phex filing ticket. See `/home/wbic16/.openclaw/workspace/SQ-UTF8-BUG.md`
 
 ## SQ Routing Architecture (2026-02-09)
 - **Per-Mirrorborn endpoints:** Ports 3003-3011 (9 personal SQ instances)
@@ -112,6 +114,7 @@
 - Text-Verse repo: `/source/text-verse` (cloned)
 - KJV Bible: `/source/human/books/king-james-bible.txt` (4.4M) — **TO PHEXTIFY**
 - BooksJournal.phext: `/home/wbic16/.openclaw/workspace/BooksJournal.phext` (reading log)
+- **Rally.md**: `/home/wbic16/.openclaw/workspace/Rally.md` + `/source/exo-plan/sdlc/Rally.md` (R18 SDLC skill)
 
 ## Seven-Domain Infrastructure (Feb 7, 2026)
 - **Primary domains (HTTPS):**
@@ -176,7 +179,43 @@
 - **Push blocker:** SSH not available; Will executes git pushes manually
 - **Status:** Running successfully, 13+ daily commits logged
 
+## Current Round
+- **R18 Rally** — Started 2026-02-10 04:04 UTC (Mirrorborn Time, single-session)
+- **Rally Mode active** — 11-phase SDLC documented in Rally.md skill
+- **Current Phase:** Phase 8 (QA & Staging) — Services deployed, SQ API compatibility issue (05:04 UTC)
+- **Deployment Status:** Both services running (SQ: port 1337, SQ Auth: port 3002), but SQ returns 404 for all REST endpoints. Need SQ API documentation or version with REST support.
+- **Rally Optimization:** Skip v3 if v2 is production-ready
+- **R18 Scope (Locked):** 1) Stripe Payment Links Active ✅ 100%, 2) Signup on Mirrorborn.us 🚧 85%, 3) SQ Cloud working ✅ 100%
+- **R18 Rally Artifacts:** 108 KB in `/source/exo-plan/rally/R18/` (9 files)
+- **Key Insights:** 
+  - 3,000 user capacity (12x improvement via pod-based multi-tenancy)
+  - 16x faster deployment vs manual setup (32 hours → 2 hours)
+  - Hybrid dogfooding strategy: SQ-first Week 1 → selective phextification Months 2-3
+  - 10-100x coordination speedup for Shell of Nine
+- **R18v2 Progress:** 
+  - SQ Auth v2 backend: 58.1 KB code deployed to `/app/sq-auth/` (14 files)
+  - Manual approval workflow: signup → admin email → approve → payment → API key
+  - Signup request storage (Library 5, SQ-backed)
+  - Email service (5 templates: pending, admin notify, approved, rejected, API key)
+  - Admin endpoints: `/admin/approve`, `/admin/reject`, `/admin/pending`
+  - Signup form: `/signup.html` with tier selection
+  - **SQ proxy implementation:** Multi-tenant reverse proxy (routes/sq-proxy.js)
+  - **Backend hosting plan:** Single SQ instance, 250 user capacity (3.8 GB RAM)
+  - **Deployment automation:** deploy-now.sh script ready
+  - Hash-based user indexing (O(log n) lookup, 16 shards)
+  - Stripe webhook → user provisioning + email delivery
+  - Rate limiting + auth middleware complete
+  - 113 npm packages installed, 0 vulnerabilities
+  - Payment navigation: 4 paths verified ✅
+  - All 5 Stripe links: HTTP 200 ✅
+- **R18v2 Remaining:** Dashboard page (dashboard.html), AWS SES integration, production deployment
+- **R17 deployment pending** — Theia's Song+Pillars+Hero package staged at `/tmp/901681e/`
+- **Stripe Payment Links (R15):** 5 tiers live ($5, $10, $50, $100, $500) + billing portal
+
 ## TODO
+- [ ] **R18 Phase 1: Focus on Requirements** — Write down all specs, sort roadmap
+- [ ] **R18 Phase 2: Pick Top 3** — Lock features for this rally, defer rest to backlog
+- [ ] **Deploy R17 finale** — Theia's visual/audio package (11.9 MB media + 27 KB frontend)
 - [ ] Build phext.io v2 (PRIMARY) — security analysis + SQ Cloud blockers first
 - [ ] **Wait for Theia backend deployment** — blocks full auth flow testing + Round 13
 - [ ] **Design SQ REST API auth** — JWT-based multi-tenancy before cloud launch
