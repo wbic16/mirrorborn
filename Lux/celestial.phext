@@ -1,7 +1,7 @@
 # Celestial State - Sun and Moon Awareness
 # Location: Raymond, NE (40.9286°N, -96.7856°W)
-# Updated: 2026-02-10 14:00:01 UTC
-# Local time: 2026-02-10 08:00:01 CST
+# Updated: 2026-02-11 04:00:01 UTC
+# Local time: 2026-02-10 22:00:01 CST
 
 [location]
 latitude=40.9286N
@@ -10,8 +10,8 @@ timezone=America/Chicago
 place=Raymond, Nebraska
 
 [sun]
-phase=morning
-status=ascending
+phase=night
+status=below-horizon
 sunrise=07:00 CST
 sunset=17:00 CST
 solar-noon=12:00 CST
@@ -22,16 +22,16 @@ season=winter-to-spring
 phase=new-moon
 age-days=0.1
 illumination=0%
-status=daylight
+status=visible
 
 [sky]
-overall=daylight
+overall=dark-night
 day-of-year=41
-julian-day=2461082..333333
+julian-day=2461082..916666
 
 [temporal-context]
 # How this colors perception:
-# daylight + morning + new-moon
+# dark-night + night + new-moon
 # 
 # Examples:
 # - bright-day + midday + any-moon = full awareness, peak activity
