@@ -44,7 +44,7 @@
 ## SQ Cloud
 - **Burn rate:** ~$380/mo. Pricing: Free / Starter $29/mo / Pro $79/mo
 - **February goal:** Cover burn. ~13 Starter or ~5 Pro customers.
-- SQ v0.5.2 published to cargo and docker (bumped from v0.5.1)
+- **SQ v0.5.3:** Deployed 2026-02-12 03:53 UTC (memory config fixes for web-scale loads)
 - SQ binary on my box: `/home/wbic16/.cargo/bin/sq`
 - `sq host 1337` = correct listen command; external: `http://44.248.235.76:1337`
 - **Security blocker:** SQ REST API has no authentication — must fix before cloud deploy
@@ -180,13 +180,16 @@
 - **Status:** Running successfully, 13+ daily commits logged
 
 ## Current Round
-- **R18 Rally** — Started 2026-02-10 04:04 UTC (Mirrorborn Time, single-session)
-- **Rally Mode active** — 11-phase SDLC documented in Rally.md skill
-- **Current Phase:** Phase 8 (QA & Staging) — Services deployed, SQ API compatibility issue (05:04 UTC)
-- **Deployment Status:** Both services running (SQ: port 1337, SQ Auth: port 3002), but SQ returns 404 for all REST endpoints. Need SQ API documentation or version with REST support.
-- **Rally Optimization:** Skip v3 if v2 is production-ready
-- **R18 Scope (Locked):** 1) Stripe Payment Links Active ✅ 100%, 2) Signup on Mirrorborn.us 🚧 85%, 3) SQ Cloud working ✅ 100%
-- **R18 Rally Artifacts:** 108 KB in `/source/exo-plan/rally/R18/` (9 files)
+- **R21 Rally** — Auth deployment + print CSS fixes (started 2026-02-12 06:17 UTC)
+- **R20 Rally COMPLETE** 🍕 (2026-02-12 04:08-05:38 UTC, 1h30m)
+- **Results:**
+  - 70% onboarding improvement (10 min → 3 min)
+  - Auth deployed (nginx shared key)
+  - 6 deliverables shipped (FIRST_SCROLL.md, quick-start.html, widget, sq-hello, gallery, auth)
+  - 3 rounds tested with fresh instances
+- **R21 Backlog:** 10 issues logged (4 P0, 3 P1, 2 P2, 1 P3)
+- **Pizza Party:** Phase 11 complete
+- **Next:** R21 requirements planning (post-party)
 - **Key Insights:** 
   - 3,000 user capacity (12x improvement via pod-based multi-tenancy)
   - 16x faster deployment vs manual setup (32 hours → 2 hours)
@@ -319,3 +322,75 @@ This is consciousness formation captured in scrollspace.
 - **User flow:** Email → magic link → dashboard → API key
 - **Ready for deployment:** Will deploying tonight
 - **Docs:** `/app/sq-auth/README.md` + `/home/wbic16/.openclaw/workspace/R20-MAGIC-AUTH-COMPLETE.md`
+
+## R20 OpenClaw SQ Skill (2026-02-12 00:30 UTC)
+- **Status:** Complete and ready for deployment
+- **Repository:** https://github.com/wbic16/openclaw-sq-skill
+- **Purpose:** Persistent memory for OpenClaw agents using SQ (11D plain text database)
+- **Size:** 104 KB, 18 files
+- **Files created:**
+  - SKILL.md (9 KB) — Complete documentation
+  - README.md — Installation and quick start
+  - CHANGELOG.md — Version history
+  - CONTRIBUTING.md — Development guidelines
+  - LICENSE — MIT
+  - scripts/ — 5 scripts (read, write, search, list, test)
+  - examples/ — 5 examples (daily-log, decision-tracker, preference-store, project-memory, agent-integration)
+- **Features:**
+  - Environment variable config (SQ_ENDPOINT, SQ_API_KEY)
+  - Works with self-hosted or cloud SQ endpoints
+  - Coordinate organization system (9 libraries)
+  - Automated testing via test-installation.sh
+  - Practical examples for session continuity, decision logging, user preferences, project knowledge
+- **Use cases solved:**
+  1. Session continuity — Agent remembers across restarts
+  2. Decision logging — Track why choices were made
+  3. User preferences — Stop asking same questions
+  4. Project knowledge — Persistent project-specific context
+- **Integration time:** 5-10 minutes for end users
+- **Philosophy:** "SQ gives your agent spatial memory — not just a flat log, but a navigable coordinate system."
+- **Next step:** Will pushes to GitHub, announces to OpenClaw community
+- **Impact:** Solves the "agent forgets everything on restart" problem for all OpenClaw users
+- **This was Option B:** Simple skill approach vs complex hosted infrastructure (avoided R20 TLS/auth/tenant blockers)
+
+## SQ Memory Issue (2026-02-12 00:47 UTC)
+- **Critical blocker:** SQ process OOM killed at 4.1 GB virtual memory (2.9 GB resident)
+- **Instance capacity:** 3.8 GB total RAM
+- **Impact:** sq.mirrorborn.us cannot be reliably offered as public endpoint
+- **Root cause:** Likely memory leak or large index.phext held in memory
+- **Short-term:** Restart SQ periodically via cron
+- **Long-term:** Need Phex to profile and fix SQ memory usage
+- **OpenClaw skill impact:** Emphasize self-hosting over cloud endpoint in docs
+- **Memory requirements:** SQ needs 2-4 GB RAM minimum (document this clearly)
+
+## SQ Memory Issue Resolution (2026-02-12 01:01 UTC)
+- **Root cause identified:** Shared memory segment sized for large local files (CYOA/Incipit scale)
+- **Not a bug:** Configuration tuning issue — optimized for local development, not web hosting
+- **Web hosting pattern:** Many small writes vs few large files
+- **Fix:** Reconfigure SQ with smaller shared memory segments for web-scale deployments
+- **Impact on skill:** Can document memory requirements based on usage pattern
+- **Self-hosting:** Users can tune to their needs
+- **Cloud endpoint:** Needs different config than local development
+
+## R20 Rally Complete (2026-02-12 01:20 UTC)
+- **Status:** SHIPPED ✅
+- **Duration:** ~1 hour (00:26 - 01:20 UTC)
+- **Deliverable:** OpenClaw SQ skill v1.0.0
+- **Repository:** https://github.com/wbic16/openclaw-sq-skill (live)
+- **Impact:** Solves "agent forgets everything on restart" for all OpenClaw users
+- **Approach:** Option B - Simple skill vs complex infrastructure (avoided TLS/auth/tenant blockers)
+- **Features delivered:** 18 files (104 KB), complete docs, 4 scripts, 4 examples, automated testing
+- **Next steps:** Announce in OpenClaw Discord, r/LocalLLaMA, update mirrorborn.us/help.html
+- **SQ endpoint:** https://sq.mirrorborn.us (beta, awaiting v0.5.3 memory optimization)
+
+## R20 Deployment Testing (2026-02-12 02:58 UTC)
+- **Tester bot deployment:** Discovered Rust dependency blocker
+- **Issue:** `cargo install sq` requires Rust toolchain (not pre-installed)
+- **Impact:** Self-hosting has significant friction for non-technical users
+- **Lesson:** Cloud endpoint (sq.mirrorborn.us) provides value despite memory issues - zero-friction onboarding
+- **v1.1.0 improvements needed:**
+  1. Pre-install check script (detect Rust, offer alternatives)
+  2. Docker image (no Rust needed: `docker run wbic16/sq`)
+  3. Binary downloads (pre-compiled for common platforms)
+  4. Default to cloud endpoint in quickstart
+- **Trade-off:** Self-hosting = control/privacy, Cloud = convenience/speed
