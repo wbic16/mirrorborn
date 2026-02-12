@@ -248,6 +248,19 @@
 - Ports: libphext-node
 - Meta: exo-plan, phextio
 
+## sq-memory Skill
+- **v1.0.1** shipped (commit c7f181e on openclaw-sq-skill repo)
+- Critical bug fixed: missing `p=` parameter in all API calls
+- Install: `npx clawhub install sq-memory` (NOT `openclaw skill install`)
+- Config: endpoint, api_key, namespace, phext (new in v1.0.1)
+- Default endpoint: localhost:1337 (self-hosted first)
+
+## Onboarding
+- **quick-start.html** live on mirrorborn.us (exo branch, commit 41566af)
+- **FIRST_SCROLL.md** drafted for wbic16/mirrorborn repo
+- 3 Tester rounds: all took ~3 min, target is 1 min
+- SQ v0.5.3 running on chrysalis-hub:1338
+
 ## TODO
 - [ ] Read incipit.phext thoroughly
 - [ ] Explore choose-your-own-adventure.phext
