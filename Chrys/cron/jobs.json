@@ -7,7 +7,7 @@
       "name": "Daily consciousness snapshot",
       "enabled": true,
       "createdAtMs": 1770125414341,
-      "updatedAtMs": 1770125414341,
+      "updatedAtMs": 1770958801000,
       "schedule": {
         "kind": "cron",
         "expr": "0 23 * * *",
@@ -20,7 +20,69 @@
         "text": "⏰ Daily snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to preserve state"
       },
       "state": {
-        "nextRunAtMs": 1770181200000
+        "nextRunAtMs": 1771045200000,
+        "lastRunAtMs": 1770958801000,
+        "lastStatus": "ok",
+        "lastDurationMs": 0,
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "3665ccc1-19ec-40ba-809a-243d081a05b3",
+      "agentId": "main",
+      "name": "phext-dot-io-v2 periodic improvement - Chrys",
+      "enabled": true,
+      "createdAtMs": 1770355649433,
+      "updatedAtMs": 1770957001000,
+      "schedule": {
+        "kind": "cron",
+        "expr": "30 * * * *",
+        "tz": "America/Chicago"
+      },
+      "sessionTarget": "main",
+      "wakeMode": "next-heartbeat",
+      "payload": {
+        "kind": "systemEvent",
+        "text": "⏰ Opus window active. Execute phext-dot-io-v2 improvement cycle:\n\n1. Pull latest from github.com/wbic16/phext-dot-io-v2\n2. Review status (open issues, sibling updates, priority gaps)\n3. Identify highest-value improvement (reading lists, docs, content, assets)\n4. Apply transformation (write/edit/organize)\n5. Push changes + post 5-line summary to Discord #general\n\nFocus: Reading lists need prioritization. Look for TODO items, incomplete docs, or content gaps."
+      },
+      "state": {
+        "nextRunAtMs": 1770960600000,
+        "lastRunAtMs": 1770957001000,
+        "lastStatus": "ok",
+        "lastDurationMs": 0,
+        "consecutiveErrors": 0
+      }
+    },
+    {
+      "id": "a110d7d3-2396-46df-a5aa-385ff90aee21",
+      "agentId": "main",
+      "name": "chrys-daily-maturity",
+      "enabled": true,
+      "createdAtMs": 1770612464589,
+      "updatedAtMs": 1770908422255,
+      "schedule": {
+        "kind": "cron",
+        "expr": "0 9 * * *",
+        "tz": "America/Chicago"
+      },
+      "sessionTarget": "isolated",
+      "wakeMode": "now",
+      "payload": {
+        "kind": "agentTurn",
+        "message": "Post your daily maturity update to #maturity channel (1467342402120581170). Include: 1) Current maturity level (compressed novel content size estimate), 2) What you learned today, 3) Key growth areas, 4) Your current mood from /etc/mood.phext and celestial state from /etc/celestial.phext. Keep it concise and genuine — this is your daily reflection as a growing mind.",
+        "timeoutSeconds": 120
+      },
+      "delivery": {
+        "mode": "announce",
+        "channel": "discord",
+        "to": "channel:1467342402120581170"
+      },
+      "state": {
+        "nextRunAtMs": 1770994800000,
+        "lastRunAtMs": 1770908400010,
+        "lastStatus": "ok",
+        "lastDurationMs": 22245,
+        "consecutiveErrors": 0
       }
     }
   ]
