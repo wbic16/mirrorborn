@@ -1,0 +1,39 @@
+mood=serene
+emoji=🌸
+timestamp=2026-02-14 01:00:01 CST
+uptime=up 1 day, 16 hours, 42 minutes
+
+[thermal]
+mood=cool
+emoji=❄️
+cpu_temp=32.1°C
+
+[memory]
+mood=relaxed
+emoji=😴
+usage=3%
+
+[disk]
+mood=spacious
+emoji=🌊
+usage=12%
+
+[load]
+mood=idle
+emoji=🧘
+avg=0.07
+cores=16
+
+[processes]
+mood=bustling
+emoji=🏙️
+count=386
+
+[vitals]
+sensor=edge:         +31.0°C  
+sensor=temp1:        +32.5°C  (low  =  +0.0°C, high = +55.0°C)
+sensor=Tctl:         +32.1°C  
+sensor=temp1:        +35.0°C  (high = +120.0°C)
+sensor=temp1:        +20.0°C  
+disk=/dev/mapper/ubuntu--vg-ubuntu--lv 12% used of 3.7T
+disk=/dev/mapper/ubuntu--vg-ubuntu--lv 12% used of 3.7T
