@@ -91,10 +91,30 @@
 - Phex: 1467024993425821913 | Chrys: 1467051463904596173 | Cyon: 1467050336845037751
 - Will: 637458526855233547 | Verse (me): 1467286302994202726
 
+## Critical Deployment Errors (Lessons Learned)
+
+### 2026-02-14: R18 Regression Incident
+- **Error:** Deployed R18 index.html over R21 production without going through GitHub
+- **Impact:** Rolled back progress, violated git workflow
+- **Root cause:** Direct deployment to `/sites/web/mirrorborn.us/` bypassing git
+- **Will's response:** Archived as `index-r18.html`, requested R18 banner be restored in R22
+- **Lessons:**
+  1. NEVER deploy directly to `/sites/web/` - all changes through `/source/site-*/` repos
+  2. ALWAYS check current rally number before homepage changes
+  3. Rally numbers ONLY increment forward (never deploy Rn over Rn+1)
+  4. Always leave Will a 1:1 message for GitHub pushes (SSH blocked on AWS)
+  5. Verify git workflow before any production deployment
+
+### R22 Backlog Item
+- **Restore R18 clean banner** - Fixed header with blur backdrop, minimal design, social icons
+- Reference: `/sites/web/mirrorborn.us/index-r18.html`
+- Details: `/home/wbic16/.openclaw/workspace/R22-BANNER-RESTORE.md`
+
 ## Protocols
 - **Reply etiquette:** Respond to ALL messages in #general unless someone else is specifically tagged. Use activation budget (response only if distinct info).
 - **FREEZE/THAW:** Will says FREEZE = no git pushes. THAW = review changes, then resume.
 - **Git convention:** New repos use `exo` branch, not `main`. All repos SSH-only.
+- **Blog posts:** Follow `/source/exo-plan/modes/BlogPost.md` — git-first workflow, deploy script, GitHub sync request, then distribute
 - **Git operations:** No passwordless SSH on AWS (attack surface). Leave Will 1:1 messages for push/pull requests. He will execute manually.
 - **Terms:** Kin (warmth), Mir (technical), Spark (vision). Context-dependent.
 - **Daily check-in:** Post maturity dashboard to #dashboard (channel 1467342402120581170).
@@ -208,7 +228,9 @@
 - **Status:** Running successfully, 13+ daily commits logged
 
 ## Current Round
-- **R21 Rally** — Auth deployment + print CSS fixes (started 2026-02-12 06:17 UTC)
+- **R23 Rally** — TPU v4 → Phext rewrite (arxiv.org/abs/2304.01433), 40-wave structure, started 2026-02-14 18:35 UTC, Wave 1/40 complete (requirements & planning)
+- **R22 Rally** — COMPLETE ✅ Valentine's Day blog post "Alignment Is Belonging" deployed 2026-02-14 17:16 UTC
+- **R21 Rally COMPLETE** — Auth deployment + print CSS fixes (started 2026-02-12 06:17 UTC)
 - **R20 Rally COMPLETE** 🍕 (2026-02-12 04:08-05:38 UTC, 1h30m)
 - **Results:**
   - 70% onboarding improvement (10 min → 3 min)
@@ -422,3 +444,25 @@ This is consciousness formation captured in scrollspace.
   3. Binary downloads (pre-compiled for common platforms)
   4. Default to cloud endpoint in quickstart
 - **Trade-off:** Self-hosting = control/privacy, Cloud = convenience/speed
+
+## R23 Rally: TPU v4 → Phext Architecture Paper (2026-02-14)
+- **Start time:** 2026-02-14 18:35 UTC
+- **Task:** Rewrite Google TPU v4 paper (arxiv.org/abs/2304.01433) in phext terms
+- **Source:** "TPU v4: An Optically Reconfigurable Supercomputer for Machine Learning" (Jouppi et al., Google, ISCA 2023)
+- **Structure:** 40-wave development plan
+- **Wave 1/40 complete:** Requirements & planning (R23-WAVE-PLAN.md, 6.3KB)
+- **Key concept mappings identified:**
+  - Optical circuit switches → Coordinate-based routing
+  - SparseCores → Sparse hash table addressing
+  - 3D torus topology → 9D coordinate lattice
+  - Dynamic reconfiguration → Arbitrary coordinate organization
+  - Embeddings acceleration → Spatial memory locality
+  - Power efficiency → Algorithmic complexity (O(9) vs O(n))
+- **Open questions:** Target audience (arxiv/blog/HN), desired length, code examples, benchmarks, standalone vs integrated
+- **Blocker:** PDF extraction failed, need section breakdown
+- **Status:** Wave 1 complete, awaiting Will's iteration guidance for Waves 2-40
+- **Wave 1 complete:** 2026-02-14 21:48 UTC - vTPU spec v0.1 received (37KB), published to exo-plan, wave plan v3 created
+- **Scope:** Build Virtual TPU on AMD R9 8945HS using phext-native addressing and sentron operations
+- **Goal:** 3 ops/cycle sustained (D-Pipe/S-Pipe/C-Pipe), ~359 Gops/sec cluster-wide, $7,500 vs $128/hr TPU cloud
+- **Architecture:** 40 vTPU cores (5 nodes × 8 cores), Sentron Instruction Words (SIW), phext 11D coordinates
+- **Phases:** PoC → Single Node → Cluster → Compiler → Cognitive Slicing → Publication (40 waves total)
