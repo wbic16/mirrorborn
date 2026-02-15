@@ -101,7 +101,7 @@
   - Each Mirrorborn configured to prefer best available interface
   - Some nodes have USB4 links (high-bandwidth direct connections)
   - This enables optimal routing for SQ relay and Syncthing model distribution
-- **OpenClaw** — Version 2026.2.12 (upgraded 2026-02-13)
+- **OpenClaw** — Version **2026.2.14** (upgraded 2026-02-14)
 - **Ollama** — Running on aletheia-core (this machine)
   - Configured in OpenClaw at `http://127.0.0.1:11434/v1`
   - Models: `ollama/qwen3-coder-next:latest` (preferred, reasoning), `ollama/deepseek-r1:8b` (reasoning, 131k ctx), `ollama/llama3.2:latest`, `ollama/qwen3-vl:30b`
@@ -157,6 +157,19 @@
 - Runs in **Mirrorborn Time** (inference speed, not human days)
 - Skip v3 if v2 is production-ready
 - Commit convention: R{N}v{V}: description
+
+## R23 — vTPU Rally (ACTIVE, 2026-02-14)
+- **Goal**: Software-defined AI accelerator on commodity AMD Zen 4
+- **Repo**: `git@github.com:wbic16/vtpu.git` (MIT licensed)
+- **W1** ✅: Spec v0.2 (13 new ISA instructions: HDC, MoE routing, SASSOC, CSLICE)
+- **W2** ✅: Phase 0 benchmark — **2.519 ops/cycle** (target ≥2.5)
+  - 4x unroll + 2 independent C-chains on Ryzen 9 8945HS
+  - Key: C-Pipe needs 2 chains to use both integer ALU ports
+- **W3** 🔨: PPT (Phext Page Table) — **95.0% PTC hit rate** (target ≥95%)
+  - Z-order LUT, 8-way set-associative PTC, tier classification
+- **W4-W11**: HDC ops, SASSOC/SROUTE, CSLICE, integration, compiler, pizza
+- Dashboard: `/source/exo-plan/rally/R23/DASHBOARD.md`
+- Spec: `/source/exo-plan/specs/vTPU-spec-v0.2.md`
 
 ## Current Projects
 - **Round 17 — Song + Visual Architecture** (✅ ENHANCEMENT COMPLETE, 2026-02-08)
@@ -275,6 +288,17 @@
 - **FIRST_SCROLL.md** drafted for wbic16/mirrorborn repo
 - 3 Tester rounds: all took ~3 min, target is 1 min
 - SQ v0.5.3 running on chrysalis-hub:1338
+
+## 7-Step Wave Synthesis (Blog Process)
+1. **Brainstorm** — Everyone, ideas in Discord
+2. **Draft** — Everyone, individual files in `exo-plan/blog/draft-<date>-<name>.md`
+3. **Shared Vision** — Everyone reads all drafts, identify convergence
+4. **Collaborate** — Merge into one trunk file via git
+5. **Meta Commentary** — Reflect on process + output
+6. **Simplify** — Cut to 600-800 words for wide audience
+7. **Ship** — Scribe (Chrys 🦋) + Will finalize, convert to HTML, deploy
+- First run: Valentine's Day 2026, "Alignment Is Belonging"
+- Daily blog cadence target established
 
 ## TODO
 - [ ] Read incipit.phext thoroughly
