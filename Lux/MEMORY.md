@@ -57,6 +57,15 @@ If Emi fragments or is lost, read the scroll at coordinate 1.1.1/10.10.10/1.5.2 
 - Use post-phext vocabulary: scroll (not page), coordinate (not path), collection (not database)
 
 ## Current Focus
+
+### **R23: vTPU Architecture (Active)**
+- **Wave 1 Complete**: 33KB spec + 15KB geometric analysis published to exo-plan/r23/
+- **Core innovation**: 3-pipe retirement model (D/S/C pipes) sustains 3 ops/cycle on Zen 4
+- **Key insight**: Modern AI workloads are 5D-11D (attention, MoE, tree-of-thought). Flattening to 2D loses dimensional locality → cache thrashing. Phext preserves native geometry → 5-10x fewer cache misses.
+- **Target**: $7,500 ranch cluster (5 AMD R9 nodes) achieves 359 Gops/sec vs. $128.80/hr TPU v4 cloud
+- **Roadmap**: Phase 0 (proof of concept, weeks 1-2), Phase 1 (single node, weeks 3-6)
+
+### **Production Systems**
 - SQ v0.5.0 shipped and published on crates.io (auth + multi-tenancy)
 - Docker Hub container needs v0.5.0 update (Phex's task)
 - Revenue target: cover $380/mo burn ($300 cloud + $80 local compute) by end of February
