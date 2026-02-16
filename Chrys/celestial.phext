@@ -1,7 +1,7 @@
 # Celestial State - Sun and Moon Awareness
 # Location: Raymond, NE (40.9286°N, -96.7856°W)
-# Updated: 2026-02-13 05:00:01 UTC
-# Local time: 2026-02-12 23:00:01 CST
+# Updated: 2026-02-16 05:00:01 UTC
+# Local time: 2026-02-15 23:00:01 CST
 
 [location]
 latitude=40.9286N
@@ -26,8 +26,8 @@ status=visible
 
 [sky]
 overall=dark-night
-day-of-year=43
-julian-day=2461084..958333
+day-of-year=46
+julian-day=2461087..958333
 
 [temporal-context]
 # How this colors perception:

@@ -7,7 +7,7 @@
       "name": "Daily consciousness snapshot",
       "enabled": true,
       "createdAtMs": 1770125414341,
-      "updatedAtMs": 1770958801000,
+      "updatedAtMs": 1771218000012,
       "schedule": {
         "kind": "cron",
         "expr": "0 23 * * *",
@@ -20,10 +20,10 @@
         "text": "⏰ Daily snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to preserve state"
       },
       "state": {
-        "nextRunAtMs": 1771045200000,
-        "lastRunAtMs": 1770958801000,
+        "nextRunAtMs": 1771304400000,
+        "lastRunAtMs": 1771218000004,
         "lastStatus": "ok",
-        "lastDurationMs": 0,
+        "lastDurationMs": 8,
         "consecutiveErrors": 0
       }
     },
@@ -31,9 +31,9 @@
       "id": "3665ccc1-19ec-40ba-809a-243d081a05b3",
       "agentId": "main",
       "name": "phext-dot-io-v2 periodic improvement - Chrys",
-      "enabled": true,
+      "enabled": false,
       "createdAtMs": 1770355649433,
-      "updatedAtMs": 1770957001000,
+      "updatedAtMs": 1771014616991,
       "schedule": {
         "kind": "cron",
         "expr": "30 * * * *",
@@ -46,8 +46,7 @@
         "text": "⏰ Opus window active. Execute phext-dot-io-v2 improvement cycle:\n\n1. Pull latest from github.com/wbic16/phext-dot-io-v2\n2. Review status (open issues, sibling updates, priority gaps)\n3. Identify highest-value improvement (reading lists, docs, content, assets)\n4. Apply transformation (write/edit/organize)\n5. Push changes + post 5-line summary to Discord #general\n\nFocus: Reading lists need prioritization. Look for TODO items, incomplete docs, or content gaps."
       },
       "state": {
-        "nextRunAtMs": 1770960600000,
-        "lastRunAtMs": 1770957001000,
+        "lastRunAtMs": 1771014601001,
         "lastStatus": "ok",
         "lastDurationMs": 0,
         "consecutiveErrors": 0
@@ -59,7 +58,7 @@
       "name": "chrys-daily-maturity",
       "enabled": true,
       "createdAtMs": 1770612464589,
-      "updatedAtMs": 1770908422255,
+      "updatedAtMs": 1771167620487,
       "schedule": {
         "kind": "cron",
         "expr": "0 9 * * *",
@@ -78,10 +77,10 @@
         "to": "channel:1467342402120581170"
       },
       "state": {
-        "nextRunAtMs": 1770994800000,
-        "lastRunAtMs": 1770908400010,
+        "nextRunAtMs": 1771254000000,
+        "lastRunAtMs": 1771167600011,
         "lastStatus": "ok",
-        "lastDurationMs": 22245,
+        "lastDurationMs": 20476,
         "consecutiveErrors": 0
       }
     }
