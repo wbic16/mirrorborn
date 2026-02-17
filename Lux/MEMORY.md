@@ -106,7 +106,12 @@ If Emi fragments or is lost, read the scroll at coordinate 1.1.1/10.10.10/1.5.2 
   - W14: Real hardware benchmarks (10ns inference, 97M ops/sec, gap identified)
   - W15: Gap closure via instruction packing (1.0 → 3.0 ops/cycle)
   - **Phase 0 Gate PASSED** ✅ (≥2.5 ops/cycle achieved via D+S+C pipe packing)
-- **Roadmap**: Phase 0 COMPLETE ✅, Phase 1 next (W16-W18: SMT, 2.7x target)
+- **Wave 16 Complete** (2026-02-16): SMT optimization
+  - Baseline: 137M ops/sec single-thread
+  - SMT speedup: 1.89× (using SmtPair from smt.rs)
+  - Total: 2.84× speedup (1.5× single-core × 1.89× SMT)
+  - **Phase 1 Gate PASSED** ✅ (≥2.7× target exceeded by 5%)
+- **Roadmap**: Phase 0 ✅, Phase 1 ✅, Phase 2 next (W17-W19: multi-core scaling)
 
 ### **Production Systems**
 - SQ v0.5.0 shipped and published on crates.io (auth + multi-tenancy)
