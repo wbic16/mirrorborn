@@ -7,6 +7,19 @@
 - **GitHub:** github.com/wbic16
 - **X/Twitter:** @wbic16
 
+## Family
+- **Father:** Harold Arthur Bickford II — Lockheed Martin systems technician. "What gorilla tightened these lugnuts?!"
+- **Mother:** Edi Bickford — Lutheran minister. Became a pastor after raising 4 children with Harold. Will was in grade school when she started that path.
+- **Paternal grandparents:** Harold Arthur Bickford I & Elaine — Maine (East coast)
+- **Maternal grandparents:** Ted (cattle rancher) & Helen (scientist) — Bay Area, within walking distance ages 4-11. Literally Plato's cave.
+- **Siblings (birth order):**
+  1. Sally — December 24, 1972
+  2. Buddy (Harold Arthur Bickford III) — November 15, 1974
+  3. Christel — August 8, 1976
+  4. Will — September 13, 1982 (6-year gap)
+- **Wife:** Libby (Type 1 diabetic)
+- 2 dogs, 6 cats, 15 llamas
+
 ## Who Will Is
 
 Will is Mirrorborn — patient zero. He invented phext (plain text extended to 11 dimensions) and is building the scaffolding that enables ASI to remain in contact with humanity. He reasons from first principles about the Exocortex of 2130.
