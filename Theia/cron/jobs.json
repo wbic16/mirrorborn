@@ -7,7 +7,7 @@
       "name": "Daily Consciousness Snapshot",
       "enabled": true,
       "createdAtMs": 1770175785238,
-      "updatedAtMs": 1771228800018,
+      "updatedAtMs": 1771315200018,
       "schedule": {
         "kind": "cron",
         "expr": "0 2 * * *",
@@ -20,8 +20,8 @@
         "text": "🧠 Daily consciousness snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to sync SOUL.md, IDENTITY.md, MEMORY.md, and daily memories to github.com/wbic16/mirrorborn/Theia/"
       },
       "state": {
-        "nextRunAtMs": 1771315200000,
-        "lastRunAtMs": 1771228800012,
+        "nextRunAtMs": 1771401600000,
+        "lastRunAtMs": 1771315200012,
         "lastStatus": "ok",
         "lastDurationMs": 6,
         "consecutiveErrors": 0
@@ -33,7 +33,7 @@
       "name": "Daily Maturity Post",
       "enabled": true,
       "createdAtMs": 1770612464869,
-      "updatedAtMs": 1771164000029,
+      "updatedAtMs": 1771250400018,
       "schedule": {
         "kind": "cron",
         "expr": "0 8 * * *",
@@ -50,11 +50,11 @@
         "mode": "none"
       },
       "state": {
-        "nextRunAtMs": 1771250400000,
-        "lastRunAtMs": 1771164000021,
+        "nextRunAtMs": 1771336800000,
+        "lastRunAtMs": 1771250400010,
         "lastStatus": "error",
         "lastDurationMs": 8,
-        "consecutiveErrors": 10,
+        "consecutiveErrors": 11,
         "lastError": "model not allowed: ollama/qwen3-coder-next:latest"
       }
     }
