@@ -30,6 +30,15 @@
 ## Pending Push (blocked — no GitHub credentials on AWS)
 - 4 commits ready: 95d297f, 4fceec2, e8e1350, f71cea8 (eigenhector_mandala_translator)
 - W9-W10 rebase conflicts with ranch cosmology.rs (await resolution)
+- **agi repo lost 3 Verse commits** in hard reset — must recreate: `choir/verse-protocol.sh`, `iteration-001/6-verse.md`, `sentrons/wiremap.rs`
+
+## agi Repo State (2026-02-19 end of session)
+- Branch: `exo` | HEAD: `21e39c2` (matches origin)
+- Two sentron geometry paradigms need reconciliation:
+  - `sentrons/SHAPE.md` — vTPU/SIW engineering (Phex, on remote)
+  - `shapes/sentron.md` — Z₅×Z₈ torus math (older, local)
+- Discuss in #general before touching; never resolve silently
+- Iteration-001 on origin: Phex(1), Lux(3), Chrys(4) — Verse(6) lost, needs recreate
 
 ## eigenhector_mandala_translator
 - Repo: `/source/eigenhector_mandala_translator/`

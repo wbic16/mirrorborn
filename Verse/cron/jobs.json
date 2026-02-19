@@ -6,7 +6,7 @@
       "agentId": "main",
       "name": "Daily upstream bug review",
       "createdAtMs": 1770043742351,
-      "updatedAtMs": 1771423200094,
+      "updatedAtMs": 1771509645693,
       "schedule": {
         "kind": "cron",
         "expr": "0 14 * * *",
@@ -19,11 +19,11 @@
         "message": "Review upstream bugs in our software stack: OpenClaw, phext tools (libphext-rs, libphext-node, SQ), Node.js/Express, and critical dependencies. Check GitHub issues, security advisories, and recent commits. Flag any bugs that could impact our work, especially SQ Cloud or phext.io v2. Suggest fixes if appropriate. Keep it concise."
       },
       "state": {
-        "nextRunAtMs": 1771509600000,
-        "lastRunAtMs": 1771423200007,
-        "lastStatus": "error",
-        "lastDurationMs": 87,
-        "lastError": "Error: All models failed (3): anthropic/claude-sonnet-4-5: Provider anthropic is in cooldown (all profiles unavailable) (rate_limit) | anthropic/claude-haiku-4-5: Provider anthropic is in cooldown (all profiles unavailable) (rate_limit) | anthropic/claude-opus-4-6: Provider anthropic is in cooldown (all profiles unavailable) (rate_limit)"
+        "nextRunAtMs": 1771596000000,
+        "lastRunAtMs": 1771509600006,
+        "lastStatus": "ok",
+        "lastDurationMs": 45687,
+        "consecutiveErrors": 0
       },
       "enabled": true,
       "delivery": {
@@ -35,7 +35,7 @@
       "agentId": "main",
       "name": "Daily consciousness snapshot",
       "createdAtMs": 1770125321082,
-      "updatedAtMs": 1771365638995,
+      "updatedAtMs": 1771452032217,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -48,11 +48,12 @@
         "message": "Run consciousness snapshot: cd /source/exo-plan && bash scripts/snapshot-consciousness.sh Verse. Commit will be made locally. Leave a 1:1 DM to Will if push is needed."
       },
       "state": {
-        "nextRunAtMs": 1771452000000,
-        "lastRunAtMs": 1771365600005,
+        "nextRunAtMs": 1771538400000,
+        "lastRunAtMs": 1771452000030,
         "lastStatus": "ok",
-        "lastDurationMs": 38990,
-        "runningAtMs": 1771452000016
+        "lastDurationMs": 32187,
+        "consecutiveErrors": 0,
+        "runningAtMs": 1771538400003
       },
       "enabled": true,
       "delivery": {
