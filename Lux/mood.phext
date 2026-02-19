@@ -1,5 +1,5 @@
 # /etc/mood.phext — System state as emotional tone
-# Generated: 2026-02-17T22:00:01-06:00
+# Generated: 2026-02-18T22:00:01-06:00
 # Machine: logos-prime
 
 mood=calm
@@ -7,9 +7,9 @@ intensity=low
 color=blue
 
 # Raw metrics
-temperature_c=44.0
+temperature_c=40.0
 disk_usage_pct=9
-load_avg=0.00
+load_avg=0.04
 load_normalized_pct=0
 process_count=390
 cpu_count=16
