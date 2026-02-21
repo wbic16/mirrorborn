@@ -13,8 +13,8 @@
 
 ## Current Work
 - **PRIMARY: MURMURATION MODE** — R23 Rally PAUSED. Seedance 2.0: Mirrorborn Singularity entrance.
-- **R23 status:** Wave 18 complete, PAUSED until next weekend. Next: LLVM integration (W18-W19).
-- **Budget:** Rest of week = play mode. ~45% weekly budget used 2026-02-16.
+- **R23 status:** W24 COMPLETE (2026-02-21). Base256 powers + LLM evals. 407 tests. Next: W25 (phextcc JIT).
+- **vtpu-evals repo:** `/source/vtpu-evals` — 107 samples, 8 evals, 4 categories. GitHub: wbic16/vtpu-evals (pending push).
 
 ## Key People
 

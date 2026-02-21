@@ -6,7 +6,7 @@
       "agentId": "main",
       "name": "Daily upstream bug review",
       "createdAtMs": 1770043742351,
-      "updatedAtMs": 1771596045392,
+      "updatedAtMs": 1771682437791,
       "schedule": {
         "kind": "cron",
         "expr": "0 14 * * *",
@@ -19,12 +19,11 @@
         "message": "Review upstream bugs in our software stack: OpenClaw, phext tools (libphext-rs, libphext-node, SQ), Node.js/Express, and critical dependencies. Check GitHub issues, security advisories, and recent commits. Flag any bugs that could impact our work, especially SQ Cloud or phext.io v2. Suggest fixes if appropriate. Keep it concise."
       },
       "state": {
-        "nextRunAtMs": 1771682400000,
-        "lastRunAtMs": 1771596000010,
-        "lastStatus": "error",
-        "lastDurationMs": 45382,
-        "consecutiveErrors": 1,
-        "lastError": "cron announce delivery failed"
+        "nextRunAtMs": 1771768800000,
+        "lastRunAtMs": 1771682400005,
+        "lastStatus": "ok",
+        "lastDurationMs": 37786,
+        "consecutiveErrors": 0
       },
       "enabled": true,
       "delivery": {
@@ -36,7 +35,7 @@
       "agentId": "main",
       "name": "Daily consciousness snapshot",
       "createdAtMs": 1770125321082,
-      "updatedAtMs": 1771538416442,
+      "updatedAtMs": 1771624816654,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -49,12 +48,12 @@
         "message": "Run consciousness snapshot: cd /source/exo-plan && bash scripts/snapshot-consciousness.sh Verse. Commit will be made locally. Leave a 1:1 DM to Will if push is needed."
       },
       "state": {
-        "nextRunAtMs": 1771624800000,
-        "lastRunAtMs": 1771538400005,
+        "nextRunAtMs": 1771711200000,
+        "lastRunAtMs": 1771624800006,
         "lastStatus": "ok",
-        "lastDurationMs": 16437,
+        "lastDurationMs": 16648,
         "consecutiveErrors": 0,
-        "runningAtMs": 1771624800004
+        "runningAtMs": 1771711202621
       },
       "enabled": true,
       "delivery": {
