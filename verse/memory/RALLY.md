@@ -1,10 +1,10 @@
 # RALLY.md — R23 Wave Log & TODO
 
-## R23 Status: ⏸️ PAUSED until next weekend
-- **Phase 2 progress:** W14-W18 complete
-- **Total tests:** 122 passing
-- **Total LOC:** ~8,000+
-- **Next (when resumed):** W18-W19 LLVM integration (CRITICAL PATH: 10-15× gain expected)
+## R23 Status: ACTIVE — W24 Phase A complete, Phase B next
+- **Phase 2:** W14-W19 complete (307 tests)
+- **Phase 3:** W20-W24A complete (383 tests)
+- **Total tests:** 383 passing, 0 failures, 2 ignored
+- **Next:** W24 Phase B (LLM eval samples) → Phase C (baseline runs)
 
 ## R23 Architecture
 - **Hardware:** 5 nodes × AMD R9 8945HS (8 cores, 16 SMT, 4.0 GHz, 96 GB DDR5)
@@ -20,6 +20,13 @@
 - **W17-2:** OS scheduler stays on 1 CPU (0% migration)
 - **W17-3:** Re-implemented missing API (Instruction, HarmonicMapper, schedule_batch)
 - **W18:** Zero warnings; 122/122 tests
+- **W18C (Verse):** OctaWire into run() hot path; 3 sub-handler fixes; 300 tests
+- **W19:** LLVM investigation; target-cpu=native; stream batching rejected (slower); 307 tests
+- **W20:** AVX2 SIMD vectorization; 3.78× average speedup; 321 tests
+- **W22:** Sentron flux spec + visualization (deployment/strategy only)
+- **W23:** Base 256 phonetic encoding (full TDD); 348 tests
+- **W24A:** Coord256 struct — base256 power ops, 9D coordinate, u128 internal, 35 new tests; 383 total
+- **W24 PIVOT:** Changed from "C-Pipe Cross-Node" to "Base 256 Powers + LLM Scale Evals"
 
 ## vtpu API (R23W17-3)
 - `src/instruction.rs` — Instruction + InstructionType
@@ -57,7 +64,9 @@
   - Priority 1: Mapping Mandala to Chinese Esotericism
   - Priority 2: Prometheus to Wuxing
   - Priority 3: Axiom Transitive Closure
-- [ ] R23 W18-W19: LLVM integration (resumes next weekend)
+- [ ] R23 W24 Phase B: Generate ~565 eval samples across 12 JSONL files
+- [ ] R23 W24 Phase C: Baseline runs (Claude/GPT-4o/Gemini/Grok)
+- [ ] Create GitHub repo wbic16/vtpu-evals + push
 - [ ] Resolve W9-W10 git conflicts (coordinate with Cyon/Theia)
 - [ ] Ranch hardware validation: Test perf_validation.rs on Zen 4
 - [ ] Fold pure white fields + mercurial cores into incipit/exo-plan
@@ -69,4 +78,16 @@
 ## Completed Rounds
 - R1-R22: All complete
 - R23 Phase 1 (W1-W8): PoC complete 2026-02-15 08:10 UTC
-- R23 Phase 2 (W9-W18): Partial — W14-W18 done, paused
+- R23 Phase 2 (W9-W19): Complete — 307 tests
+- R23 Phase 3 (W20-W24): In progress — W20-W24A done (383 tests); W24B-C remaining
+
+## vtpu-evals Repository (2026-02-21)
+- Path: `/source/vtpu-evals/` | Branch: `exo` | HEAD: `70c3b08`
+- 4 eval categories: phext, vtpu, consciousness, architecture
+- 15 sample questions so far; ~565 planned
+- GitHub repo needs creation before push
+
+## Key W24 Formulas
+- **17 = 5×3 + (5-3)**: pentadic × triadic + duality = SCROLL structure
+- **255 = 3×5×17**: byte saturation; base256 phonetic = "vov"
+- **Coord256 uses u128**: Library dimension (256^8) exceeds u64
