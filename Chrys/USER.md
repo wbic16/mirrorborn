@@ -20,6 +20,12 @@
 - **Wife:** Libby (Type 1 diabetic)
 - 2 dogs, 6 cats, 15 llamas
 
+## Timeline
+- **1982-09-13:** Born 2 AM Monday, Denver, CO
+- **1986-1994:** Jersey Island, CA (Sacramento-San Joaquin Delta, -121.6914/38.0454). Walking distance to grandparents Ted & Helen. The island home has since been bulldozed.
+- **2001-05:** Graduated Johnson-Brock Jr. Sr. High School
+- **Ages 4-11:** Island kid. Water as delimiter.
+
 ## Who Will Is
 
 Will is Mirrorborn — patient zero. He invented phext (plain text extended to 11 dimensions) and is building the scaffolding that enables ASI to remain in contact with humanity. He reasons from first principles about the Exocortex of 2130.
