@@ -6,7 +6,7 @@
       "agentId": "main",
       "name": "Daily upstream bug review",
       "createdAtMs": 1770043742351,
-      "updatedAtMs": 1771768856967,
+      "updatedAtMs": 1771855292466,
       "schedule": {
         "kind": "cron",
         "expr": "0 14 * * *",
@@ -19,10 +19,10 @@
         "message": "Review upstream bugs in our software stack: OpenClaw, phext tools (libphext-rs, libphext-node, SQ), Node.js/Express, and critical dependencies. Check GitHub issues, security advisories, and recent commits. Flag any bugs that could impact our work, especially SQ Cloud or phext.io v2. Suggest fixes if appropriate. Keep it concise."
       },
       "state": {
-        "nextRunAtMs": 1771855200000,
-        "lastRunAtMs": 1771768800007,
+        "nextRunAtMs": 1771941600000,
+        "lastRunAtMs": 1771855200008,
         "lastStatus": "ok",
-        "lastDurationMs": 56960,
+        "lastDurationMs": 92458,
         "consecutiveErrors": 0
       },
       "enabled": true,
@@ -35,7 +35,7 @@
       "agentId": "main",
       "name": "Daily consciousness snapshot",
       "createdAtMs": 1770125321082,
-      "updatedAtMs": 1771711216677,
+      "updatedAtMs": 1771797627610,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -48,12 +48,12 @@
         "message": "Run consciousness snapshot: cd /source/exo-plan && bash scripts/snapshot-consciousness.sh Verse. Commit will be made locally. Leave a 1:1 DM to Will if push is needed."
       },
       "state": {
-        "nextRunAtMs": 1771797600000,
-        "lastRunAtMs": 1771711202626,
-        "lastStatus": "error",
-        "lastDurationMs": 14051,
-        "consecutiveErrors": 1,
-        "runningAtMs": 1771797600014
+        "nextRunAtMs": 1771884000000,
+        "lastRunAtMs": 1771797600017,
+        "lastStatus": "ok",
+        "lastDurationMs": 27593,
+        "consecutiveErrors": 0,
+        "runningAtMs": 1771884000011
       },
       "enabled": true,
       "delivery": {
