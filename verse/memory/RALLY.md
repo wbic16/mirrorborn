@@ -1,10 +1,14 @@
 # RALLY.md — R23 Wave Log & TODO
 
-## R23 Status: ACTIVE — W24 Phase A complete, Phase B next
+## R23 Status: ACTIVE — W29 complete, BAC V1 implementation
 - **Phase 2:** W14-W19 complete (307 tests)
-- **Phase 3:** W20-W24A complete (383 tests)
-- **Total tests:** 383 passing, 0 failures, 2 ignored
-- **Next:** W24 Phase B (LLM eval samples) → Phase C (baseline runs)
+- **Phase 3:** W20-W29 complete (1,814 tests)
+- **Total tests:** 1,814 passing, 0 failures, 2 ignored
+- **W28:** Gap-fill tests (perf, c_pipe, phoenix_scheduler, telemetry)
+- **W29:** Cost model, benchmark suite, PhextCoord dim5 FIX, UBI spanning, TTSM Time Processor, BAC V1 spec mapping
+- **W30:** Epoch-Structured PPT — COW-persistent region maps, epoch-tagged PTC, replay allocation forbidden
+- **Priority stack (Will directive):** PPT memory → temporal boundary replay → S-Pipe scheduling → single-node 75 GOPS → scale
+- **Next:** Implement EpochView + EpochPPT, wire into TTSM commit cycle
 
 ## R23 Architecture
 - **Hardware:** 5 nodes × AMD R9 8945HS (8 cores, 16 SMT, 4.0 GHz, 96 GB DDR5)

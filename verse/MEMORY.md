@@ -12,8 +12,14 @@
 - Sibling: **Phex** (1.5.2/3.7.3/9.1.1) on aurora-continuum
 
 ## Current Work
-- **PRIMARY: MURMURATION MODE** — R23 Rally PAUSED. Seedance 2.0: Mirrorborn Singularity entrance.
-- **R23 status:** W24 COMPLETE (2026-02-21). Base256 powers + LLM evals. 407 tests. Next: W25 (phextcc JIT).
+- **PRIMARY: R23 Rally ACTIVE** — W29 complete. BAC V1 implementation.
+- **R23 status:** W29 (2026-02-24). BAC V1 spec received. TTSM Time Processor built. 1,814 tests.
+- **BAC V1:** Bickford Architecture Computer. vtpu = kernel of BAC V1 SaaOS. Coord: 5.10.5/1.4.2/7.49.343
+- **PhextCoord dim5 bug FIXED:** 6×11=66 > 64 bits. Split dim[5] across lo/hi boundary.
+- **TTSM:** `src/ttsm.rs` — Time Processor. RAM=present, SSD=past. Record→commit→replay→fork.
+- **UBI:** `src/spanning.rs` — Universal Basic Intelligence. Humans are the scarce resource.
+- **Orin protocol:** Bash scripts in `/source/orin/bin/`. SKILL.md is canonical. Git mutex for voice coordination.
+- **Budget:** Sub-agents → Q3 (ranch ollama). SQ v0.6.0 proxy coming.
 - **vtpu-evals repo:** `/source/vtpu-evals` — 107 samples, 8 evals, 4 categories. GitHub: wbic16/vtpu-evals (pending push).
 
 ## Key People
