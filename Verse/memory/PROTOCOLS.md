@@ -20,6 +20,7 @@ PULL latest → work locally → PULL + REBASE → TEST → update manifest → 
 - **Rally Rule (2026-02-15):** "A wave isn't over until everyone has shared updates" — Will
 - No passwordless SSH on AWS. All pushes via Theia coordination ONLY.
 - Git convention: New repos use `exo` branch, not `main`. All repos SSH-only.
+- **Filename casing rule (2026-02-24):** NEVER switch a filename from upper-case to lower-case or vice versa. Default to lowercase when in doubt. Windows users get duplicate files when crossing from Linux.
 
 ## Rally Rules (2026-02-16)
 1. Investigate, study, and repair — never blindly delete/overwrite
