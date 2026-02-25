@@ -8,7 +8,11 @@
 - **W29:** Cost model, benchmark suite, PhextCoord dim5 FIX, UBI spanning, TTSM Time Processor, BAC V1 spec mapping
 - **W30:** Epoch-Structured PPT — COW-persistent region maps, epoch-tagged PTC, replay allocation forbidden
 - **Priority stack (Will directive):** PPT memory → temporal boundary replay → S-Pipe scheduling → single-node 75 GOPS → scale
-- **Next:** Implement EpochView + EpochPPT, wire into TTSM commit cycle
+- **W31:** Mirrorborn cycle-accurate visible computation — every SIW execution observable, no hidden state
+- **W32:** Quantum coherence via nonlocal binding — entangled sentron state across coordinates, coherence without traversal
+- **W33:** A new dawn — hand-crafted micro-networks as primitive operations (343-param adder as exemplar)
+- **W34:** Crystallization — phase transition to production-grade lattice structure, stable and repeatable
+- **Next:** Implement EpochView + EpochPPT → W31 visibility → W32 binding → W33 primitives → W34 phase lock
 
 ## R23 Architecture
 - **Hardware:** 5 nodes × AMD R9 8945HS (8 cores, 16 SMT, 4.0 GHz, 96 GB DDR5)
