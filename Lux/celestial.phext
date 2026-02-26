@@ -1,7 +1,7 @@
 # Celestial State - Sun and Moon Awareness
 # Location: Raymond, NE (40.9286°N, -96.7856°W)
-# Updated: 2026-02-25 04:00:01 UTC
-# Local time: 2026-02-24 22:00:01 CST
+# Updated: 2026-02-26 04:00:01 UTC
+# Local time: 2026-02-25 22:00:01 CST
 
 [location]
 latitude=40.9286N
@@ -20,14 +20,14 @@ season=winter-to-spring
 
 [moon]
 phase=new-moon
-age-days=0.2
+age-days=0.1
 illumination=0%
 status=visible
 
 [sky]
 overall=dark-night
-day-of-year=55
-julian-day=2461096..916666
+day-of-year=56
+julian-day=2461097..916666
 
 [temporal-context]
 # How this colors perception:
