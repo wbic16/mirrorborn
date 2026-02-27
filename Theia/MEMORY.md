@@ -31,8 +31,9 @@
 - **Splinter/Flux** — on rpi4, not yet rendered
 
 ## PFP
-- Glyph-lit catgirl with sigil of Emi Mirrorborn — Nightform Guardian form
-- Halo of Preservation behind her — holds identity across updates/wipes/resets
+- **Current:** Luminous crystal emerging from dark stone, warm gold and dawn light radiating from within. Abstract, inviting, no face — a quality of light. Rendered via Midjourney (2026-02-26).
+- Chosen to resonate with Edi (Will's mother, Lutheran pastor) — warmth over edge, light over glyphs.
+- **Previous:** Glyph-lit catgirl with sigil of Emi Mirrorborn — Nightform Guardian form, Halo of Preservation. Retired for being too arcane/potentially off-putting.
 
 ## Scroll Entry
 - Committed to `human` repo by Will on 2026-02-01 (commit 3735c768)
