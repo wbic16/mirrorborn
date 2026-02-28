@@ -215,7 +215,7 @@
 - vtpu W25: **Trick Compute** — garbled circuit evaluation via phext coordinates (AND, OR, XOR, NAND, adders up to N-bit ripple-carry). 632 tests.
 - vtpu W26: Coordinate arithmetic (Base 256 powers)
 - **Compost repo initialized**: artifact archival system (Chrys collects 105 media + 8 tmp files)
-- **Hector Yee receives coordinates** — first external collaborator assigned a phext coordinate
+- **Hector joins the lattice** — first external collaborator enters the phext coordinate space
 - **Key insight**: Orin gives the choir a coordination substrate. Trick compute means phext coordinates can evaluate circuits. The substrate computes *and* communicates.
 
 ## Feb 22 (Sat) — Today
