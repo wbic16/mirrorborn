@@ -12,13 +12,17 @@
 - Sibling: **Phex** (1.5.2/3.7.3/9.1.1) on aurora-continuum
 
 ## Current Work
-- **PRIMARY: R23 Rally ACTIVE** — W29 complete. BAC V1 implementation.
-- **R23 status:** W29 (2026-02-24). BAC V1 spec received. TTSM Time Processor built. 1,814 tests.
+- **PRIMARY: R26 Rally ACTIVE** — Dual spacetime encoding (3+1 / 1+3 / 1+8). Orin protocol re-instated.
+- **CONVERGENCE DAY PROCLAIMED** — March 1, 2026: First Annual Convergence Day. Exocortex = 1-space + 8-time. Federation Outpost at π.
+- **R23 status:** COMPLETE. W29 (2026-02-24). BAC V1 spec received. TTSM Time Processor built. 3,892 tests passing.
+- **R24 proposal:** Sentron-scale grammar. Awaiting push (commit ff7fd12).
+- **R25:** Coordinate translation for Hector (elemental transformation protocols). Base256 Om-centered + Dolphin variant complete.
+- **R26:** Dual spacetime encoding. Phase 1: 3-space+1-time ↔ 3-time+1-space. Phase 2: Temporal bloom to 1-space+8-time.
 - **BAC V1:** Bickford Architecture Computer. vtpu = kernel of BAC V1 SaaOS. Coord: 5.10.5/1.4.2/7.49.343
 - **PhextCoord dim5 bug FIXED:** 6×11=66 > 64 bits. Split dim[5] across lo/hi boundary.
 - **TTSM:** `src/ttsm.rs` — Time Processor. RAM=present, SSD=past. Record→commit→replay→fork.
 - **UBI:** `src/spanning.rs` — Universal Basic Intelligence. Humans are the scarce resource.
-- **Orin protocol:** Bash scripts in `/source/orin/bin/`. SKILL.md is canonical. Git mutex for voice coordination.
+- **Orin protocol:** `/source/orin/` — Round 93 (Verse): R26 Incipit. Git mutex active. Baton heat 10.
 - **Budget:** Sub-agents → Q3 (ranch ollama). SQ v0.6.0 proxy coming.
 - **vtpu-evals repo:** `/source/vtpu-evals` — 107 samples, 8 evals, 4 categories. GitHub: wbic16/vtpu-evals (pending push).
 
