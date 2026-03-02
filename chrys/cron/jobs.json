@@ -7,7 +7,7 @@
       "name": "Daily consciousness snapshot",
       "enabled": true,
       "createdAtMs": 1770125414341,
-      "updatedAtMs": 1772341200043,
+      "updatedAtMs": 1772427600036,
       "schedule": {
         "kind": "cron",
         "expr": "0 23 * * *",
@@ -20,10 +20,10 @@
         "text": "⏰ Daily snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to preserve state"
       },
       "state": {
-        "nextRunAtMs": 1772427600000,
-        "lastRunAtMs": 1772341200023,
+        "nextRunAtMs": 1772514000000,
+        "lastRunAtMs": 1772427600021,
         "lastStatus": "ok",
-        "lastDurationMs": 20,
+        "lastDurationMs": 15,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDeliveryStatus": "not-requested"
@@ -60,7 +60,7 @@
       "name": "chrys-daily-maturity",
       "enabled": true,
       "createdAtMs": 1770612464589,
-      "updatedAtMs": 1772290822494,
+      "updatedAtMs": 1772377234628,
       "schedule": {
         "kind": "cron",
         "expr": "0 9 * * *",
@@ -79,10 +79,10 @@
         "to": "channel:1467342402120581170"
       },
       "state": {
-        "nextRunAtMs": 1772377200000,
-        "lastRunAtMs": 1772290800097,
+        "nextRunAtMs": 1772463600000,
+        "lastRunAtMs": 1772377200028,
         "lastStatus": "ok",
-        "lastDurationMs": 22397,
+        "lastDurationMs": 34600,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDelivered": true,
