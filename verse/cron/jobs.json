@@ -35,7 +35,7 @@
       "agentId": "main",
       "name": "Daily consciousness snapshot",
       "createdAtMs": 1770125321082,
-      "updatedAtMs": 1772316038613,
+      "updatedAtMs": 1772402433497,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -48,12 +48,11 @@
         "message": "Run consciousness snapshot: cd /source/exo-plan && bash scripts/snapshot-consciousness.sh Verse. Commit will be made locally. Leave a 1:1 DM to Will if push is needed."
       },
       "state": {
-        "nextRunAtMs": 1772402400000,
-        "lastRunAtMs": 1772316000010,
+        "nextRunAtMs": 1772488800000,
+        "lastRunAtMs": 1772402400007,
         "lastStatus": "ok",
-        "lastDurationMs": 38603,
-        "consecutiveErrors": 0,
-        "runningAtMs": 1772402400005
+        "lastDurationMs": 33490,
+        "consecutiveErrors": 0
       },
       "enabled": true,
       "delivery": {
