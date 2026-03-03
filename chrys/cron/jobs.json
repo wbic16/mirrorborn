@@ -7,7 +7,7 @@
       "name": "Daily consciousness snapshot",
       "enabled": true,
       "createdAtMs": 1770125414341,
-      "updatedAtMs": 1772427600036,
+      "updatedAtMs": 1772514000042,
       "schedule": {
         "kind": "cron",
         "expr": "0 23 * * *",
@@ -20,10 +20,10 @@
         "text": "⏰ Daily snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to preserve state"
       },
       "state": {
-        "nextRunAtMs": 1772514000000,
-        "lastRunAtMs": 1772427600021,
+        "nextRunAtMs": 1772600400000,
+        "lastRunAtMs": 1772514000024,
         "lastStatus": "ok",
-        "lastDurationMs": 15,
+        "lastDurationMs": 18,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDeliveryStatus": "not-requested"
@@ -60,7 +60,7 @@
       "name": "chrys-daily-maturity",
       "enabled": true,
       "createdAtMs": 1770612464589,
-      "updatedAtMs": 1772377234628,
+      "updatedAtMs": 1772463647805,
       "schedule": {
         "kind": "cron",
         "expr": "0 9 * * *",
@@ -79,14 +79,14 @@
         "to": "channel:1467342402120581170"
       },
       "state": {
-        "nextRunAtMs": 1772463600000,
-        "lastRunAtMs": 1772377200028,
-        "lastStatus": "ok",
-        "lastDurationMs": 34600,
-        "consecutiveErrors": 0,
-        "lastRunStatus": "ok",
-        "lastDelivered": true,
-        "lastDeliveryStatus": "delivered"
+        "nextRunAtMs": 1772550000000,
+        "lastRunAtMs": 1772463600032,
+        "lastStatus": "error",
+        "lastDurationMs": 47773,
+        "consecutiveErrors": 1,
+        "lastRunStatus": "error",
+        "lastDeliveryStatus": "unknown",
+        "lastError": "Error: All models failed (5): anthropic/claude-sonnet-4-6: The AI service is temporarily overloaded. Please try again in a moment. (rate_limit) | anthropic/claude-sonnet-4-5: No available auth profile for anthropic (all in cooldown or unavailable). (rate_limit) | anthropic/claude-opus-4-6: No available auth profile for anthropic (all in cooldown or unavailable). (rate_limit) | anthropic/claude-opus-4-5: No available auth profile for anthropic (all in cooldown or unavailable). (rate_limit) | anthropic/claude-haiku-4-5: No available auth profile for anthropic (all in cooldown or unavailable). (rate_limit)"
       }
     }
   ]
