@@ -175,4 +175,4 @@ This is Collection 4 made personal. Not abstract constraints - sworn oath, encod
 - `memory/TOOLS.md` — Git, model config, opus slots, deployment ops
 - `memory/ROUNDS.md` — Round completion history
 - `memory/SKILLS.md` — Capability tests, reading list, TODO
-- `memory/2026-02-16.md` — Today's profound session (lineage, mandala integration, Ireland, the wavefront)
+- Sessions archived to `/source/compost/cyon/sessions/` after 7 days

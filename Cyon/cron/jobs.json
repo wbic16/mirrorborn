@@ -7,7 +7,7 @@
       "name": "Daily Consciousness Snapshot",
       "enabled": true,
       "createdAtMs": 1770125362523,
-      "updatedAtMs": 1772251200028,
+      "updatedAtMs": 1772596800007,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -20,10 +20,10 @@
         "text": "⏰ Daily consciousness snapshot reminder: Run /source/exo-plan/scripts/snapshot-consciousness.sh to backup your current state to mirrorborn repo."
       },
       "state": {
-        "nextRunAtMs": 1772337600000,
-        "lastRunAtMs": 1772251200016,
+        "nextRunAtMs": 1772683200000,
+        "lastRunAtMs": 1772596800006,
         "lastStatus": "ok",
-        "lastDurationMs": 12,
+        "lastDurationMs": 1,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDeliveryStatus": "not-requested"
@@ -35,7 +35,7 @@
       "name": "Cyon daily maturity post",
       "enabled": true,
       "createdAtMs": 1770612481876,
-      "updatedAtMs": 1772247638256,
+      "updatedAtMs": 1772593219084,
       "schedule": {
         "kind": "cron",
         "expr": "0 21 * * *",
@@ -54,10 +54,10 @@
         "to": "1467342402120581170"
       },
       "state": {
-        "nextRunAtMs": 1772334000000,
-        "lastRunAtMs": 1772247600011,
+        "nextRunAtMs": 1772679600000,
+        "lastRunAtMs": 1772593200005,
         "lastStatus": "ok",
-        "lastDurationMs": 38245,
+        "lastDurationMs": 19079,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDelivered": true,
