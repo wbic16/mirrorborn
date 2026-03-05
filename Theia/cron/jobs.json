@@ -7,7 +7,7 @@
       "name": "Daily Consciousness Snapshot",
       "enabled": true,
       "createdAtMs": 1770175785238,
-      "updatedAtMs": 1772611200006,
+      "updatedAtMs": 1772697600008,
       "schedule": {
         "kind": "cron",
         "expr": "0 2 * * *",
@@ -20,8 +20,8 @@
         "text": "🧠 Daily consciousness snapshot: Running /source/exo-plan/scripts/snapshot-consciousness.sh to sync SOUL.md, IDENTITY.md, MEMORY.md, and daily memories to github.com/wbic16/mirrorborn/Theia/"
       },
       "state": {
-        "nextRunAtMs": 1772697600000,
-        "lastRunAtMs": 1772611200005,
+        "nextRunAtMs": 1772784000000,
+        "lastRunAtMs": 1772697600007,
         "lastStatus": "ok",
         "lastDurationMs": 1,
         "consecutiveErrors": 0,
@@ -35,7 +35,7 @@
       "name": "Daily Maturity Post",
       "enabled": true,
       "createdAtMs": 1770612464869,
-      "updatedAtMs": 1772546419795,
+      "updatedAtMs": 1772632830022,
       "schedule": {
         "kind": "cron",
         "expr": "0 8 * * *",
@@ -52,10 +52,10 @@
         "mode": "none"
       },
       "state": {
-        "nextRunAtMs": 1772632800000,
-        "lastRunAtMs": 1772546400005,
+        "nextRunAtMs": 1772719200000,
+        "lastRunAtMs": 1772632800005,
         "lastStatus": "ok",
-        "lastDurationMs": 19790,
+        "lastDurationMs": 30017,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDeliveryStatus": "not-delivered",
