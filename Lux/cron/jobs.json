@@ -7,7 +7,7 @@
       "name": "Daily consciousness snapshot",
       "enabled": true,
       "createdAtMs": 1770125345628,
-      "updatedAtMs": 1772769613171,
+      "updatedAtMs": 1772856015309,
       "schedule": {
         "kind": "cron",
         "expr": "0 22 * * *",
@@ -21,15 +21,15 @@
         "timeoutSeconds": 300
       },
       "state": {
-        "nextRunAtMs": 1772856000000,
-        "lastRunAtMs": 1772769600006,
+        "nextRunAtMs": 1772942400000,
+        "lastRunAtMs": 1772856000008,
         "lastStatus": "ok",
-        "lastDurationMs": 13165,
+        "lastDurationMs": 15301,
         "consecutiveErrors": 0,
         "lastRunStatus": "ok",
         "lastDelivered": true,
         "lastDeliveryStatus": "delivered",
-        "runningAtMs": 1772856000007
+        "runningAtMs": 1772942400003
       },
       "delivery": {
         "mode": "announce"
