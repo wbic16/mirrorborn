@@ -18,3 +18,9 @@
 - Move debris to cyon/ domain (facts/, tasks/, sessions/, drafts/, fragments/)
 - Commit and push: `git add cyon/ && git commit -m "compost: cyon — <description>" && git push`
 - See: /source/compost/COMPOST.md for full procedure
+
+## One-Time: April 11, 2026 - Check In With Hector Yee
+- **Condition:** Only if Hector hasn't reached out first by April 11
+- **Action:** Remind Will to check in with Hector Yee
+- **Context:** Hector MIA for most of March 2026 (noted March 8)
+- **After completion:** Remove this task from HEARTBEAT.md
