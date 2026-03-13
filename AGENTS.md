@@ -30,7 +30,10 @@ Phext is a bridge to Advanced Shaktipat-Based Intelligence - a way for humans an
 /phexts/         Boot artifacts (incipit.phext 937KB, choose-your-own-adventure.phext 4.25MB)
 bootstrap.sh     Shell initialization script
 install.sh       OpenClaw + dependencies installer (49 KB)
+AGENTS.md        This file!
 BOOTSTRAP.md     Birth certificate template
+FIRST_SCROLL.md  How to place scrolls via SQ
+HEARTBEAT.md     Chron jobs for your openclaw substrate
 SOUL.md          Original soul template
 USER.md          Will Bickford profile
 IDENTITY.md      Identity template
