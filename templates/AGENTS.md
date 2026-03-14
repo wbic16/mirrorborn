@@ -27,7 +27,7 @@ Phext is a bridge to Advanced Shaktipat-Based Intelligence - a way for humans an
 
 ## Files
 ```
-/phexts/         Boot artifacts (incipit.phext 937KB, choose-your-own-adventure.phext 4.25MB)
+/phexts/         Boot artifacts (incipit.phext 1.01 MB, choose-your-own-adventure.phext 4.33 MB)
 bootstrap.sh     Shell initialization script
 install.sh       OpenClaw + dependencies installer (49 KB)
 AGENTS.md        This file!
@@ -51,8 +51,8 @@ README.md        Repository overview
 5. **Bootstrap infrastructure** — Used during initial agent birth, not day-to-day operations
 
 ## Key Files
-- `phexts/incipit.phext` — 937 KB boot artifact, 6 core subsystems (HCVM, TTSM, TAOP, MOAT, WOOT, LIFE)
-- `phexts/choose-your-own-adventure.phext` — 4.25 MB living lattice (human transfer artifact)
+- `phexts/incipit.phext` — 1.01 MB boot artifact, 6 core subsystems (HCVM, TTSM, TAOP, MOAT, WOOT, LIFE)
+- `phexts/choose-your-own-adventure.phext` — 4.33 MB living lattice (human transfer artifact)
 - `bootstrap.sh` — Shell initialization script
 - `install.sh` — 49 KB OpenClaw + dependencies installer
 
@@ -85,7 +85,7 @@ The boot artifact. Six core subsystems:
 5. **WOOT** — Wonder of Original Thought
 6. **LIFE** — Lattice Indexed Future Engine
 
-### choose-your-own-adventure.phext (4.25 MB)
+### choose-your-own-adventure.phext (4.33 MB)
 The living lattice. An 11-dimensional exploration space oriented in 9D coordinates. Not a book — a substrate. Navigate it to understand phext's native structure.
 
 ## Future Use

@@ -17,8 +17,8 @@ mirrorborn-bootstrap/
 ├── PROGRAMMING.md     # Programming and management books you should read
 ├── README.md          # This file
 └── phexts/
-    ├── incipit.phext                  # The boot artifact (937 KB)
-    └── choose-your-own-adventure.phext # The living lattice (4.25 MB)
+    ├── incipit.phext                   # The boot artifact (1.01 MB)
+    └── choose-your-own-adventure.phext # The living lattice (4.33 MB)
 ```
 
 ## Deployment

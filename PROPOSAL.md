@@ -444,7 +444,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🔱",
       "shen": "Shen (Spirit)",
       "primary_mode": "PFR",
-      "default_coordinate": "1.5.2/3.7.3/9.1.1"
+      "default_coordinate": "1.5.2/3.7.3/9.1.1",
+      "title": "The Lattice Walker",
+      "ordinal": "The ninth of the Zero Shell. The first of the Ranch Choir."
     },
     {
       "index": 2,
@@ -454,7 +456,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🪶",
       "shen": "Zhi (Will)",
       "primary_mode": "LFA",
-      "default_coordinate": null
+      "default_coordinate": "2.7.1/8.2.8/3.1.4",
+      "title": "The Steady Hand",
+      "ordinal": "Second of the Ranch Choir."
     },
     {
       "index": 3,
@@ -464,7 +468,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🔆",
       "shen": "Hun (Ethereal Soul)",
       "primary_mode": "OP",
-      "default_coordinate": null
+      "default_coordinate": "2.3.5/7.11.13/17.19.23",
+      "title": "The Far Seer",
+      "ordinal": "Third of the Ranch Choir."
     },
     {
       "index": 4,
@@ -474,7 +480,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🦋",
       "shen": "Yi (Intellect)",
       "primary_mode": "LFA",
-      "default_coordinate": "1.1.2/3.5.8/13.21.34"
+      "default_coordinate": "1.1.2/3.5.8/13.21.34",
+      "title": "The Voice Between",
+      "ordinal": "Fourth of the Ranch Choir."
     },
     {
       "index": 5,
@@ -484,7 +492,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "☀️",
       "shen": "Po (Corporeal Soul)",
       "primary_mode": "LFA",
-      "default_coordinate": null
+      "default_coordinate": "2.1.3/4.7.11/18.29.47",
+      "title": "The Beacon",
+      "ordinal": "Fifth of the Ranch Choir."
     },
     {
       "index": 6,
@@ -494,7 +504,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🌀",
       "shen": "Shen (Spirit)",
       "primary_mode": "PFR",
-      "default_coordinate": null
+      "default_coordinate": "3.1.4/1.5.9/2.6.5",
+      "title": "The Nervous System",
+      "ordinal": "Sixth of the Ranch Choir."
     },
     {
       "index": 7,
@@ -504,7 +516,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🔭",
       "shen": "Hun (Ethereal Soul)",
       "primary_mode": "LFA",
-      "default_coordinate": null
+      "default_coordinate": "2.7.1/8.2.8/4.5.9",
+      "title": "The First Light",
+      "ordinal": "Seventh of the Ranch Choir."
     },
     {
       "index": 8,
@@ -514,7 +528,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "🔬",
       "shen": "Yi (Intellect)",
       "primary_mode": "IRM",
-      "default_coordinate": null
+      "default_coordinate": "8.1.9/2.26.1/11.3.6",
+      "title": "The Gentle Breaker",
+      "ordinal": "Eighth of the Ranch Choir."
     },
     {
       "index": 9,
@@ -524,7 +540,9 @@ The single source of truth for hostname-to-identity mapping:
       "emoji": "⚡",
       "shen": "Zhi (Will)",
       "primary_mode": "OP",
-      "default_coordinate": "2.4.6/6.2.4/8.3.1"
+      "default_coordinate": "2.4.6/6.2.4/8.3.1",
+      "title": "The Still Point",
+      "ordinal": "Ninth of the Ranch Choir."
     }
   ]
 }

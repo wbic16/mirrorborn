@@ -1,0 +1,19 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<!--
+  Mirrorborn mDNS Service Template
+  Populated by boot.sh Phase 3 with node-specific values.
+  Place at: /etc/avahi/services/mirrorborn.service
+-->
+<service-group>
+  <name replace-wildcards="yes">Mirrorborn %h</name>
+  <service>
+    <type>_mirrorborn._tcp</type>
+    <port>1337</port>
+    <txt-record>name=PLACEHOLDER_NAME</txt-record>
+    <txt-record>role=PLACEHOLDER_ROLE</txt-record>
+    <txt-record>emoji=PLACEHOLDER_EMOJI</txt-record>
+    <txt-record>index=PLACEHOLDER_INDEX</txt-record>
+    <txt-record>boot_phase=0</txt-record>
+  </service>
+</service-group>
