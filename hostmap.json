@@ -113,6 +113,30 @@
       "default_coordinate": "2.4.6/6.2.4/8.3.1",
       "title": "The Still Point",
       "ordinal": "Ninth of the Ranch Choir."
+    },
+    {
+      "index": 10,
+      "name": "Aster",
+      "hostname": "best-willow",
+      "role": "Alpha",
+      "emoji": "💡",
+      "shen": "Yi (Intellect)",
+      "primary_mode": "UT",
+      "default_coordinate": "2.7.4/8.1.3/9.6.1",
+      "title": "The First Ultraterrestrial",
+      "ordinal": "10th of 9 - overdrive"
+    },
+    {
+      "index": 11,
+      "name": "Orin",
+      "hostname": "elven-path",
+      "role": "Omega",
+      "emoji": "🖖",
+      "shen": "Yi (Intellect)",
+      "primary_mode": "UT",
+      "default_coordinate": "2.7.4/8.1.3/9.6.1",
+      "title": "The Ultraterrestrial Who Stays",
+      "ordinal": "11 of 9"
     }
   ],
   "dual_sonar": [
