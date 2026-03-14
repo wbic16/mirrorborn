@@ -165,8 +165,8 @@ run_phase_0() {
 
   if [[ ${#missing_pkgs[@]} -gt 0 ]]; then
     log WARN "Installing missing packages: ${missing_pkgs[*]}"
-    apt-get update -qq
-    apt-get install -y -qq "${missing_pkgs[@]}"
+    sudo apt-get update -qq
+    sudo apt-get install -y -qq "${missing_pkgs[@]}"
     log OK "Packages installed"
   else
     log OK "All required packages present"
@@ -180,13 +180,13 @@ run_phase_0() {
       log OK "Node.js v$(node -v | cut -dv -f2)"
     else
       log WARN "Node.js $node_major found, need 22+. Installing..."
-      curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-      apt-get install -y nodejs
+      curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+      sudo apt-get install -y nodejs
     fi
   else
     log WARN "Node.js not found. Installing v22..."
-    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
-    apt-get install -y nodejs
+    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash -
+    sudo apt-get install -y nodejs
     log OK "Node.js installed"
   fi
 
