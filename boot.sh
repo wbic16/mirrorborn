@@ -1,6 +1,6 @@
 #!/bin/bash
 # Mirrorborn V2 Boot Orchestrator — IGNITION
-# Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME]
+# Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME] [--memory-source PATH] [--dry-run]
 set -euo pipefail
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
@@ -26,21 +26,27 @@ QUORUM=5
 WARM_BOOT=0
 START_PHASE=0
 FORCE_HOSTNAME=""
+MEMORY_SOURCE=""
+DRY_RUN=0
 VERBOSE=0
 
 # ─── Argument Parsing ────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --warm)       WARM_BOOT=1; shift ;;
-    --phase)      START_PHASE="$2"; shift 2 ;;
-    --hostname)   FORCE_HOSTNAME="$2"; shift 2 ;;
-    --verbose)    VERBOSE=1; shift ;;
+    --warm)           WARM_BOOT=1; shift ;;
+    --phase)          START_PHASE="$2"; shift 2 ;;
+    --hostname)       FORCE_HOSTNAME="$2"; shift 2 ;;
+    --memory-source)  MEMORY_SOURCE="$2"; shift 2 ;;
+    --dry-run)        DRY_RUN=1; shift ;;
+    --verbose)        VERBOSE=1; shift ;;
     --help|-h)
-      echo "Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME] [--verbose]"
-      echo "  --warm       Restore from archived memory (warm boot)"
-      echo "  --phase N    Start from phase N (0-4)"
-      echo "  --hostname   Override hostname detection"
-      echo "  --verbose    Print debug output"
+      echo "Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME] [--memory-source PATH] [--dry-run] [--verbose]"
+      echo "  --warm              Restore from archived memory (warm boot)"
+      echo "  --phase N           Start from phase N (0-4)"
+      echo "  --hostname          Override hostname detection"
+      echo "  --memory-source     Override memory restore path (default: auto-detect)"
+      echo "  --dry-run           Show what would happen without making changes"
+      echo "  --verbose           Print debug output"
       exit 0 ;;
     *) shift ;;
   esac
@@ -349,16 +355,70 @@ run_phase_2() {
 
   if [[ "$is_warm" == "0" ]]; then
     log INFO "Cold boot: deploying templates"
-    # Copy templates
-    for f in IDENTITY.md SOUL.md USER.md FIRST_SCROLL.md TOOLS.md PROGRAMMING.md; do
+    # Copy templates (except IDENTITY.md — we pre-fill it from hostmap below)
+    for f in SOUL.md USER.md FIRST_SCROLL.md TOOLS.md PROGRAMMING.md; do
       if [[ -f "$BOOT_DIR/templates/$f" ]]; then
         cp "$BOOT_DIR/templates/$f" "$WORKSPACE_DIR/$f"
       fi
     done
 
+    # Pre-populate IDENTITY.md from hostmap data (no blank placeholders)
+    if [[ -f "$BOOT_DIR/templates/IDENTITY.md" ]]; then
+      sed -e "s/\[Resurrect here\]/${NODE_NAME}/" \
+          -e "s/\[Your signature\]/${NODE_EMOJI}/" \
+          -e "s/\[Choose: X\.X\.X\/Y\.Y\.Y\/Z\.Z\.Z\]/${NODE_COORD}/" \
+          -e "s/\[Which of Will's machines are you on?\]/${NODE_HOSTNAME}/" \
+          "$BOOT_DIR/templates/IDENTITY.md" > "$WORKSPACE_DIR/IDENTITY.md"
+      log OK "IDENTITY.md pre-filled from hostmap (${NODE_EMOJI} ${NODE_NAME} @ ${NODE_HOSTNAME})"
+    fi
+
     # Copy BOOTSTRAP.md (will be deleted after first session)
     cp "$BOOT_DIR/templates/BOOTSTRAP.md" "$WORKSPACE_DIR/BOOTSTRAP.md" 2>/dev/null || true
+
+    # Import V1 memories if present (fallback chain: --memory-source → /source/mirrorborn/NAME → /source/mirrorborn/hostname)
+    local v1_source=""
+    if [[ -n "$MEMORY_SOURCE" && -d "$MEMORY_SOURCE" ]]; then
+      v1_source="$MEMORY_SOURCE"
+      log OK "Memory source: explicit path ($v1_source)"
+    elif [[ -d "${BOOT_DIR}/$(echo "$NODE_NAME" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')" ]]; then
+      v1_source="${BOOT_DIR}/$(echo "$NODE_NAME" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')"
+      log OK "Memory source: V1 archive by name ($v1_source)"
+    elif [[ -d "${BOOT_DIR}/$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')" ]]; then
+      v1_source="${BOOT_DIR}/$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')"
+      log OK "Memory source: V1 archive by hostname ($v1_source)"
+    fi
+
+    if [[ -n "$v1_source" ]]; then
+      if [[ -f "$v1_source/MEMORY.md" ]]; then
+        cp -f "$v1_source/MEMORY.md" "$WORKSPACE_DIR/MEMORY.md"
+        log OK "MEMORY.md imported from V1 archive"
+      fi
+      if [[ -d "$v1_source/memory" ]]; then
+        mkdir -p "$WORKSPACE_DIR/memory"
+        cp -r "$v1_source/memory/"* "$WORKSPACE_DIR/memory/" 2>/dev/null || true
+        local mem_count
+        mem_count="$(ls "$WORKSPACE_DIR/memory/" | wc -l)"
+        log OK "Memory files imported: ${mem_count} entries"
+      fi
+      if [[ -f "$v1_source/IDENTITY.md" ]]; then
+        cp -f "$v1_source/IDENTITY.md" "$WORKSPACE_DIR/IDENTITY.md"
+        log OK "IDENTITY.md restored from V1 archive (overrides template)"
+      fi
+      is_warm=1
+      log INFO "Cold boot upgraded to warm via V1 archive import"
+    else
+      log INFO "No V1 archive found — clean cold boot"
+    fi
   fi
+
+  # Configure git identity for this node
+  local node_email
+  node_email="$(jq -r ".nodes[] | select(.hostname == \"$NODE_HOSTNAME\") | .email // empty" "$BOOT_DIR/hostmap.json" 2>/dev/null || echo "")"
+  if [[ -z "$node_email" ]]; then
+    node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@visionquest.me"
+  fi
+  su - $USER -c "git config --global user.name '${NODE_NAME}' && git config --global user.email '${node_email}'"
+  log OK "Git identity: ${NODE_NAME} <${node_email}>"
 
   # Deploy role-specific skill
   local role_skill="$BOOT_DIR/skills/roles/$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')/SKILL.md"
@@ -526,12 +586,15 @@ run_phase_4() {
     log OK "Heartbeat cron installed (5-minute interval)"
   fi
 
-  # Configure OpenClaw gateway
-  log INFO "Configuring OpenClaw gateway..."
-  # This would normally involve openclaw configure, but we defer to human interaction
-  # for API key and Discord token setup
-  log WARN "OpenClaw gateway requires manual configuration (API key + Discord token)"
-  log INFO "Run: su - $USER -c 'openclaw configure --section model && openclaw configure --section channels'"
+  # Verify OpenClaw operational status
+  log INFO "Checking OpenClaw gateway..."
+  if su - $USER -c "openclaw status" >/dev/null 2>&1; then
+    log OK "OpenClaw gateway operational"
+  else
+    log WARN "OpenClaw gateway not yet configured (API key + Discord token required)"
+    log INFO "Run: su - $USER -c 'openclaw configure'"
+    log INFO "Boot complete, but agent is SILENT until OpenClaw is configured."
+  fi
 
   # Write boot-complete state
   cat > "${STATE_DIR}/boot-complete.json" <<BOOTEOF
@@ -546,7 +609,7 @@ run_phase_4() {
   "boot_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "phases_completed": [0, 1, 2, 3, 4],
   "mesh_state": "$(jq -r '.mesh_healthy' "${STATE_DIR}/mesh.json" 2>/dev/null || echo "unknown")",
-  "version": "2.0.0"
+  "version": "2.1.0"
 }
 BOOTEOF
 
@@ -569,10 +632,61 @@ BOOTEOF
   log OK "Phase 4 complete. ${NODE_EMOJI} ${NODE_NAME} is operational."
 }
 
+# ─── Dry Run Summary ────────────────────────────────────────────────────────
+run_dry_run() {
+  log PHASE "Dry Run: Boot Plan for ${NODE_EMOJI} ${NODE_NAME} @ ${NODE_HOSTNAME}"
+
+  echo ""
+  log INFO "Boot type:     $([ "$WARM_BOOT" == "1" ] && echo "warm (--warm passed)" || echo "cold (default)")"
+  log INFO "Start phase:   $START_PHASE"
+  log INFO "Workspace:     $WORKSPACE_DIR"
+  log INFO "Archive base:  $ARCHIVE_BASE"
+  log INFO "Memory source: ${MEMORY_SOURCE:-auto-detect}"
+
+  # Memory detection
+  local node_name_title
+  node_name_title="$(echo "$NODE_NAME" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')"
+  local v1_source=""
+  if [[ -n "$MEMORY_SOURCE" && -d "$MEMORY_SOURCE" ]]; then
+    v1_source="$MEMORY_SOURCE (explicit)"
+  elif [[ -d "${BOOT_DIR}/${node_name_title}" ]]; then
+    v1_source="${BOOT_DIR}/${node_name_title} (auto by name)"
+  elif [[ -d "${BOOT_DIR}/$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')" ]]; then
+    v1_source="${BOOT_DIR}/$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]') (auto by hostname)"
+  else
+    v1_source="NONE — clean cold boot"
+  fi
+  log INFO "V1 archive:    $v1_source"
+
+  local node_email
+  node_email="$(jq -r ".nodes[] | select(.hostname == \"$NODE_HOSTNAME\") | .email // empty" "$BOOT_DIR/hostmap.json" 2>/dev/null || echo "")"
+  if [[ -z "$node_email" ]]; then
+    node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@visionquest.me"
+  fi
+  log INFO "Git identity:  ${NODE_NAME} <${node_email}>"
+
+  local archive_path="${ARCHIVE_BASE}/${NODE_HOSTNAME}"
+  if [[ "$WARM_BOOT" == "1" && -d "$archive_path" ]]; then
+    log INFO "Warm archive:  $archive_path (FOUND)"
+  else
+    log INFO "Warm archive:  $archive_path (not found)"
+  fi
+
+  echo ""
+  log INFO "Re-run without --dry-run to execute."
+  echo ""
+}
+
 # ─── Main ────────────────────────────────────────────────────────────────────
 main() {
   # Resolve identity first (needed by all phases)
   resolve_identity
+
+  # Dry run: show plan and exit
+  if [[ "$DRY_RUN" == "1" ]]; then
+    run_dry_run
+    exit 0
+  fi
 
   # Run phases
   for phase in $(seq "$START_PHASE" 4); do
