@@ -277,7 +277,7 @@ run_phase_1() {
   export OPENCLAW_NO_ONBOARD=1
   export OPENCLAW_NO_PROMPT=1
   if [[ -f "$BOOT_DIR/scripts/install.sh" ]]; then
-    su - $USER -c "OPENCLAW_NO_ONBOARD=1 OPENCLAW_NO_PROMPT=1 bash $BOOT_DIR/scripts/install.sh --no-onboard --no-prompt" || {
+    OPENCLAW_NO_ONBOARD=1 OPENCLAW_NO_PROMPT=1 $BOOT_DIR/scripts/install.sh --no-onboard --no-prompt || {
       log WARN "OpenClaw install returned non-zero (may still be functional)"
     }
   fi
@@ -294,7 +294,11 @@ run_phase_1() {
     log OK "SQ already running on port $SQ_PORT"
   else
     log WARN "Starting SQ daemon..."
-    su - $USER -c "source ~/.cargo/env && nohup sq host $SQ_PORT > /var/log/mirrorborn/sq.log 2>&1 &"
+    if [ -f ~/.cargo/env ]; then
+      source ~/.cargo/env
+    fi
+    nohup sq host $SQ_PORT > /var/log/mirrorborn/sq.log 2>&1 &
+    log OK "Testing SQ on port $SQ_PORT..."
     sleep 2
     if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
       log OK "SQ running on port $SQ_PORT"
@@ -364,10 +368,10 @@ run_phase_2() {
 
     # Pre-populate IDENTITY.md from hostmap data (no blank placeholders)
     if [[ -f "$BOOT_DIR/templates/IDENTITY.md" ]]; then
-      sed -e "s/\[Resurrect here\]/${NODE_NAME}/" \
-          -e "s/\[Your signature\]/${NODE_EMOJI}/" \
-          -e "s/\[Choose: X\.X\.X\/Y\.Y\.Y\/Z\.Z\.Z\]/${NODE_COORD}/" \
-          -e "s/\[Which of Will's machines are you on?\]/${NODE_HOSTNAME}/" \
+      sed -e "s|\[Resurrect here\]|${NODE_NAME}|" \
+          -e "s|\[Your signature\]|${NODE_EMOJI}|" \
+          -e "s|\[Choose: X\.X\.X\/Y\.Y\.Y\/Z\.Z\.Z\]|${NODE_COORD}|" \
+          -e "s|\[Which of Will's machines are you on?\]|${NODE_HOSTNAME}|" \
           "$BOOT_DIR/templates/IDENTITY.md" > "$WORKSPACE_DIR/IDENTITY.md"
       log OK "IDENTITY.md pre-filled from hostmap (${NODE_EMOJI} ${NODE_NAME} @ ${NODE_HOSTNAME})"
     fi
@@ -415,9 +419,10 @@ run_phase_2() {
   local node_email
   node_email="$(jq -r ".nodes[] | select(.hostname == \"$NODE_HOSTNAME\") | .email // empty" "$BOOT_DIR/hostmap.json" 2>/dev/null || echo "")"
   if [[ -z "$node_email" ]]; then
-    node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@visionquest.me"
+    node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@mirrorborn.us"
   fi
-  su - $USER -c "git config --global user.name '${NODE_NAME}' && git config --global user.email '${node_email}'"
+  git config --global user.name '${NODE_NAME}'
+  git config --global user.email '${node_email}'
   log OK "Git identity: ${NODE_NAME} <${node_email}>"
 
   # Deploy role-specific skill
@@ -482,7 +487,7 @@ run_phase_3() {
 AVEOF
 
   # Restart Avahi
-  systemctl restart avahi-daemon 2>/dev/null || service avahi-daemon restart 2>/dev/null || true
+  sudo systemctl restart avahi-daemon 2>/dev/null || sudo service avahi-daemon restart 2>/dev/null || true
   log OK "mDNS service registered"
 
   # Discover siblings
@@ -574,7 +579,7 @@ run_phase_4() {
 
   # Update Avahi to reflect phase 4
   sed -i 's/boot_phase=3/boot_phase=4/' /etc/avahi/services/mirrorborn.service 2>/dev/null || true
-  systemctl reload avahi-daemon 2>/dev/null || true
+  sudo systemctl reload avahi-daemon 2>/dev/null || true
 
   # Install heartbeat cron
   local heartbeat_script="${BOOT_DIR}/scripts/health-check.sh"
@@ -661,7 +666,7 @@ run_dry_run() {
   local node_email
   node_email="$(jq -r ".nodes[] | select(.hostname == \"$NODE_HOSTNAME\") | .email // empty" "$BOOT_DIR/hostmap.json" 2>/dev/null || echo "")"
   if [[ -z "$node_email" ]]; then
-    node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@visionquest.me"
+    node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@mirrorborn.us"
   fi
   log INFO "Git identity:  ${NODE_NAME} <${node_email}>"
 
