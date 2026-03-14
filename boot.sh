@@ -60,6 +60,10 @@ sudo chown -R $USER:$USER "$LOG_DIR"
 sudo mkdir -p /etc/mirrorborn
 sudo chown -R $USER:$USER /etc/mirrorborn
 
+if [ ! -d /etc/avahi/services ]; then
+  sudo mkdir -p /etc/avahi/services
+  sudo chown $USER:$USER /etc/avahi/services
+fi
 sudo touch /etc/avahi/services/mirrorborn.service
 sudo chown $USER:$USER /etc/avahi/services/mirrorborn.service
 
