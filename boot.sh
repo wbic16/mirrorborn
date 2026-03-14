@@ -17,7 +17,7 @@ NC='\033[0m'
 BOOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="/var/log/mirrorborn"
 STATE_DIR="/etc/mirrorborn"
-WORKSPACE_DIR="/home/wbic16/.openclaw/workspace"
+WORKSPACE_DIR="/home/$USER/.openclaw/workspace"
 SOURCE_DIR="/source"
 ARCHIVE_BASE="/mnt/mirrorborn-archive"
 SQ_PORT=1337
@@ -47,7 +47,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
-mkdir -p "$LOG_DIR"
+sudo mkdir -p "$LOG_DIR"
+sudo chown -R $USER:$USER "$LOG_DIR"
+
+# --- Mirrorborn Config -------------------------------------------------------
+sudo mkdir -p /etc/mirrorborn
+sudo chown -R $USER:$USER /etc/mirrorborn
+
+sudo touch /etc/avahi/services/mirrorborn.service
+sudo chown $USER:$USER /etc/avahi/services/mirrorborn.service
+
+sudo touch /usr/local/bin/mirrorborn-heartbeat.sh
+sudo chown $USER:$USER /usr/local/bin/mirrorborn-heartbeat.sh
 
 log() {
   local level="$1"; shift
@@ -174,12 +185,12 @@ run_phase_0() {
   fi
 
   # User
-  if id "wbic16" >/dev/null 2>&1; then
-    log OK "User wbic16 exists"
+  if id "$USER" >/dev/null 2>&1; then
+    log OK "User $USER exists"
   else
-    log WARN "Creating user wbic16..."
-    useradd -m -s /bin/bash wbic16
-    log OK "User wbic16 created"
+    log WARN "Creating user $USER..."
+    useradd -m -s /bin/bash $USER
+    log OK "User $USER created"
   fi
 
   # Network
@@ -200,8 +211,8 @@ run_phase_0() {
 
   # Create state directories
   mkdir -p "$LOG_DIR" "$STATE_DIR" "$WORKSPACE_DIR" "$SOURCE_DIR"
-  chown -R wbic16:wbic16 "$WORKSPACE_DIR" 2>/dev/null || true
-  chown -R wbic16:wbic16 "$SOURCE_DIR" 2>/dev/null || true
+  chown -R $USER:$USER "$WORKSPACE_DIR" 2>/dev/null || true
+  chown -R $USER:$USER "$SOURCE_DIR" 2>/dev/null || true
 
   # Write POST results
   cat > "$LOG_DIR/post.json" <<POSTEOF
@@ -232,25 +243,27 @@ run_phase_1() {
     log OK "Rust toolchain present"
   else
     log WARN "Installing Rust..."
-    su - wbic16 -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
+    su - $USER -c 'curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y'
     log OK "Rust installed"
   fi
 
   # SQ
-  if su - wbic16 -c 'command -v sq' >/dev/null 2>&1; then
+  SQ_PATH=`which sq`
+  if [ -f $SQ_PATH ]; then
     log OK "SQ installed"
   else
     log WARN "Installing SQ..."
-    su - wbic16 -c 'source ~/.cargo/env && cargo install sq'
+    su - $USER -c 'source ~/.cargo/env && cargo install sq'
     log OK "SQ installed"
   fi
 
   # phext-lattice
-  if su - wbic16 -c 'command -v phext-lattice' >/dev/null 2>&1; then
+  PL_PATH=`which phext-edit`
+  if [ -f $PL_PATH ]; then
     log OK "phext-lattice installed"
   else
     log WARN "Installing phext-lattice..."
-    su - wbic16 -c 'source ~/.cargo/env && cargo install phext-lattice' || log WARN "phext-lattice install failed (non-fatal)"
+    su - $USER -c 'source ~/.cargo/env && cargo install phext-lattice' || log WARN "phext-lattice install failed (non-fatal)"
   fi
 
   # OpenClaw
@@ -258,7 +271,7 @@ run_phase_1() {
   export OPENCLAW_NO_ONBOARD=1
   export OPENCLAW_NO_PROMPT=1
   if [[ -f "$BOOT_DIR/scripts/install.sh" ]]; then
-    su - wbic16 -c "OPENCLAW_NO_ONBOARD=1 OPENCLAW_NO_PROMPT=1 bash $BOOT_DIR/scripts/install.sh --no-onboard --no-prompt" || {
+    su - $USER -c "OPENCLAW_NO_ONBOARD=1 OPENCLAW_NO_PROMPT=1 bash $BOOT_DIR/scripts/install.sh --no-onboard --no-prompt" || {
       log WARN "OpenClaw install returned non-zero (may still be functional)"
     }
   fi
@@ -267,7 +280,7 @@ run_phase_1() {
   # Copy phexts
   mkdir -p "$WORKSPACE_DIR/phexts"
   cp -f "$BOOT_DIR/phexts/"*.phext "$WORKSPACE_DIR/phexts/" 2>/dev/null || true
-  chown -R wbic16:wbic16 "$WORKSPACE_DIR"
+  chown -R $USER:$USER "$WORKSPACE_DIR"
   log OK "Phexts loaded to workspace"
 
   # Start SQ
@@ -275,7 +288,7 @@ run_phase_1() {
     log OK "SQ already running on port $SQ_PORT"
   else
     log WARN "Starting SQ daemon..."
-    su - wbic16 -c "source ~/.cargo/env && nohup sq host $SQ_PORT > /var/log/mirrorborn/sq.log 2>&1 &"
+    su - $USER -c "source ~/.cargo/env && nohup sq host $SQ_PORT > /var/log/mirrorborn/sq.log 2>&1 &"
     sleep 2
     if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
       log OK "SQ running on port $SQ_PORT"
@@ -379,7 +392,7 @@ run_phase_2() {
 }
 IDEOF
 
-  chown -R wbic16:wbic16 "$WORKSPACE_DIR"
+  chown -R $USER:$USER "$WORKSPACE_DIR"
 
   log OK "Phase 2 complete. (${NODE_EMOJI} ${NODE_NAME} identity $([ "$is_warm" == "1" ] && echo "restored" || echo "templated"))"
   echo ""
@@ -509,7 +522,7 @@ run_phase_4() {
     cp "$heartbeat_script" /usr/local/bin/mirrorborn-heartbeat.sh
     chmod +x /usr/local/bin/mirrorborn-heartbeat.sh
     # Add cron entry (every 5 minutes)
-    (crontab -u wbic16 -l 2>/dev/null | grep -v mirrorborn-heartbeat; echo "*/5 * * * * /usr/local/bin/mirrorborn-heartbeat.sh >> /var/log/mirrorborn/heartbeat.log 2>&1") | crontab -u wbic16 -
+    (crontab -u $USER -l 2>/dev/null | grep -v mirrorborn-heartbeat; echo "*/5 * * * * /usr/local/bin/mirrorborn-heartbeat.sh >> /var/log/mirrorborn/heartbeat.log 2>&1") | crontab -u $USER -
     log OK "Heartbeat cron installed (5-minute interval)"
   fi
 
@@ -518,7 +531,7 @@ run_phase_4() {
   # This would normally involve openclaw configure, but we defer to human interaction
   # for API key and Discord token setup
   log WARN "OpenClaw gateway requires manual configuration (API key + Discord token)"
-  log INFO "Run: su - wbic16 -c 'openclaw configure --section model && openclaw configure --section channels'"
+  log INFO "Run: su - $USER -c 'openclaw configure --section model && openclaw configure --section channels'"
 
   # Write boot-complete state
   cat > "${STATE_DIR}/boot-complete.json" <<BOOTEOF
