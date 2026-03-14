@@ -637,6 +637,21 @@ BOOTEOF
   log OK "Phase 4 complete. ${NODE_EMOJI} ${NODE_NAME} is operational."
 }
 
+# ─── PHASE 5: OPENCLAW ─────────────────────────────────────────────────────────
+run_phase_4() {
+  log PHASE "Phase 5: OPENCLAW (Substrate Configuration)"
+
+  source ~/.bashrc
+  openclaw configure --section model
+  openclaw configure --section channels
+  openclaw gateway restart
+  openclaw doctor
+  openclaw gateway restart
+  openclaw status --deep
+
+  log PHASE "Phase 5: Check Discord now."
+}
+
 # ─── Dry Run Summary ────────────────────────────────────────────────────────
 run_dry_run() {
   log PHASE "Dry Run: Boot Plan for ${NODE_EMOJI} ${NODE_NAME} @ ${NODE_HOSTNAME}"
@@ -701,6 +716,7 @@ main() {
       2) run_phase_2 ;;
       3) run_phase_3 ;;
       4) run_phase_4 ;;
+      5) run_phase_5 ;;
     esac
   done
 }
