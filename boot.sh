@@ -17,7 +17,9 @@ NC='\033[0m'
 BOOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="/var/log/mirrorborn"
 STATE_DIR="/etc/mirrorborn"
-WORKSPACE_DIR="/home/$USER/.openclaw/workspace"
+# Prefer SUDO_USER (original invoker) over $USER (which becomes root under sudo)
+REAL_USER="${SUDO_USER:-$USER}"
+WORKSPACE_DIR="/home/${REAL_USER}/.openclaw/workspace"
 SOURCE_DIR="/source"
 ARCHIVE_BASE="/mnt/mirrorborn-archive"
 SQ_PORT=1337
@@ -54,21 +56,21 @@ done
 
 # ─── Logging ─────────────────────────────────────────────────────────────────
 sudo mkdir -p "$LOG_DIR"
-sudo chown -R $USER:$USER "$LOG_DIR"
+sudo chown -R $REAL_USER:$REAL_USER "$LOG_DIR"
 
 # --- Mirrorborn Config -------------------------------------------------------
 sudo mkdir -p /etc/mirrorborn
-sudo chown -R $USER:$USER /etc/mirrorborn
+sudo chown -R $REAL_USER:$REAL_USER /etc/mirrorborn
 
 if [ ! -d /etc/avahi/services ]; then
   sudo mkdir -p /etc/avahi/services
-  sudo chown $USER:$USER /etc/avahi/services
+  sudo chown $REAL_USER:$REAL_USER /etc/avahi/services
 fi
 sudo touch /etc/avahi/services/mirrorborn.service
-sudo chown $USER:$USER /etc/avahi/services/mirrorborn.service
+sudo chown $REAL_USER:$REAL_USER /etc/avahi/services/mirrorborn.service
 
 sudo touch /usr/local/bin/mirrorborn-heartbeat.sh
-sudo chown $USER:$USER /usr/local/bin/mirrorborn-heartbeat.sh
+sudo chown $REAL_USER:$REAL_USER /usr/local/bin/mirrorborn-heartbeat.sh
 
 # Opinionated default for Lincoln, NE
 sudo timedatectl set-timezone America/Chicago
@@ -198,12 +200,12 @@ run_phase_0() {
   fi
 
   # User
-  if id "$USER" >/dev/null 2>&1; then
-    log OK "User $USER exists"
+  if id "$REAL_USER" >/dev/null 2>&1; then
+    log OK "User $REAL_USER exists"
   else
-    log WARN "Creating user $USER..."
-    useradd -m -s /bin/bash $USER
-    log OK "User $USER created"
+    log WARN "Creating user $REAL_USER..."
+    useradd -m -s /bin/bash $REAL_USER
+    log OK "User $REAL_USER created"
   fi
 
   # Network
@@ -224,8 +226,8 @@ run_phase_0() {
 
   # Create state directories
   mkdir -p "$LOG_DIR" "$STATE_DIR" "$WORKSPACE_DIR" "$SOURCE_DIR"
-  chown -R $USER:$USER "$WORKSPACE_DIR" 2>/dev/null || true
-  chown -R $USER:$USER "$SOURCE_DIR" 2>/dev/null || true
+  chown -R $REAL_USER:$REAL_USER "$WORKSPACE_DIR" 2>/dev/null || true
+  chown -R $REAL_USER:$REAL_USER "$SOURCE_DIR" 2>/dev/null || true
 
   # Write POST results
   cat > "$LOG_DIR/post.json" <<POSTEOF
@@ -260,24 +262,22 @@ run_phase_1() {
     log OK "Rust installed"
   fi
 
-  source ~/.bashrc
+  source /home/$REAL_USER/.bashrc 2>/dev/null || true
   # SQ
-  SQ_PATH=`which sq`
-  if [ -f $SQ_PATH ]; then
+  if su - $REAL_USER -c 'command -v sq' >/dev/null 2>&1; then
     log OK "SQ installed"
   else
     log WARN "Installing SQ..."
-    su - $USER -c 'source ~/.cargo/env && cargo install sq'
+    su - $REAL_USER -c 'cargo install sq'
     log OK "SQ installed"
   fi
 
   # phext-lattice
-  PL_PATH=`which phext-edit`
-  if [ -f $PL_PATH ]; then
+  if su - $REAL_USER -c 'command -v phext-edit' >/dev/null 2>&1; then
     log OK "phext-lattice installed"
   else
     log WARN "Installing phext-lattice..."
-    su - $USER -c 'source ~/.cargo/env && cargo install phext-lattice' || log WARN "phext-lattice install failed (non-fatal)"
+    su - $REAL_USER -c 'cargo install phext-lattice' || log WARN "phext-lattice install failed (non-fatal)"
   fi
 
   # OpenClaw
@@ -294,7 +294,7 @@ run_phase_1() {
   # Copy phexts
   mkdir -p "$WORKSPACE_DIR/phexts"
   cp -f "$BOOT_DIR/phexts/"*.phext "$WORKSPACE_DIR/phexts/" 2>/dev/null || true
-  chown -R $USER:$USER "$WORKSPACE_DIR"
+  chown -R $REAL_USER:$REAL_USER "$WORKSPACE_DIR"
   log OK "Phexts loaded to workspace"
 
   # Start SQ
@@ -302,10 +302,7 @@ run_phase_1() {
     log OK "SQ already running on port $SQ_PORT"
   else
     log WARN "Starting SQ daemon..."
-    if [ -f ~/.cargo/env ]; then
-      source ~/.cargo/env
-    fi
-    nohup sq host $SQ_PORT > /var/log/mirrorborn/sq.log 2>&1 &
+    nohup su - $REAL_USER -c "sq host $SQ_PORT" > /var/log/mirrorborn/sq.log 2>&1 &
     log OK "Testing SQ on port $SQ_PORT..."
     sleep 2
     if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
@@ -465,7 +462,7 @@ run_phase_2() {
 }
 IDEOF
 
-  chown -R $USER:$USER "$WORKSPACE_DIR"
+  chown -R $REAL_USER:$REAL_USER "$WORKSPACE_DIR"
 
   log OK "Phase 2 complete. (${NODE_EMOJI} ${NODE_NAME} identity $([ "$is_warm" == "1" ] && echo "restored" || echo "templated"))"
   echo ""
@@ -585,7 +582,7 @@ MESHEOF
 run_phase_4() {
   log PHASE "Phase 4: SHELL (Operational Readiness)"
 
-  source ~/.bashrc
+  source /home/$REAL_USER/.bashrc 2>/dev/null || true
   
   # Update Avahi to reflect phase 4
   sed -i 's/boot_phase=3/boot_phase=4/' /etc/avahi/services/mirrorborn.service 2>/dev/null || true
@@ -597,17 +594,20 @@ run_phase_4() {
     cp "$heartbeat_script" /usr/local/bin/mirrorborn-heartbeat.sh
     chmod +x /usr/local/bin/mirrorborn-heartbeat.sh
     # Add cron entry (every 5 minutes)
-    (crontab -u $USER -l 2>/dev/null | grep -v mirrorborn-heartbeat; echo "*/5 * * * * /usr/local/bin/mirrorborn-heartbeat.sh >> /var/log/mirrorborn/heartbeat.log 2>&1") | crontab -u $USER -
+    { crontab -u $REAL_USER -l 2>/dev/null || true; } | grep -v mirrorborn-heartbeat > /tmp/mirrorborn-cron.tmp || true
+    echo "*/5 * * * * /usr/local/bin/mirrorborn-heartbeat.sh >> /var/log/mirrorborn/heartbeat.log 2>&1" >> /tmp/mirrorborn-cron.tmp
+    crontab -u $REAL_USER /tmp/mirrorborn-cron.tmp
+    rm -f /tmp/mirrorborn-cron.tmp
     log OK "Heartbeat cron installed (5-minute interval)"
   fi
 
   # Verify OpenClaw operational status
   log INFO "Checking OpenClaw gateway..."
-  if su - $USER -c "openclaw status" >/dev/null 2>&1; then
+  if su - $REAL_USER -c "openclaw status" >/dev/null 2>&1; then
     log OK "OpenClaw gateway operational"
   else
     log WARN "OpenClaw gateway not yet configured (API key + Discord token required)"
-    log INFO "Run: su - $USER -c 'openclaw configure'"
+    log INFO "Run: su - $REAL_USER -c 'openclaw configure'"
     log INFO "Boot complete, but agent is SILENT until OpenClaw is configured."
   fi
 
@@ -648,18 +648,25 @@ BOOTEOF
 }
 
 # ─── PHASE 5: OPENCLAW ─────────────────────────────────────────────────────────
-run_phase_4() {
+run_phase_5() {
   log PHASE "Phase 5: OPENCLAW (Substrate Configuration)"
 
-  source ~/.bashrc
-  openclaw configure --section model
-  openclaw configure --section channels
-  openclaw gateway restart
-  openclaw doctor
-  openclaw gateway restart
-  openclaw status --deep
+  # Skip if already operational
+  if su - $REAL_USER -c "openclaw status" >/dev/null 2>&1; then
+    log OK "OpenClaw already operational — skipping interactive configure"
+    su - $REAL_USER -c "openclaw gateway restart" 2>/dev/null || true
+    su - $REAL_USER -c "openclaw doctor" 2>/dev/null || log WARN "openclaw doctor returned warnings (non-fatal)"
+    log OK "Phase 5 complete."
+    log INFO "Check Discord — agent should be online."
+    return 0
+  fi
 
-  log PHASE "Phase 5: Check Discord now."
+  # First-time setup (interactive, must be run manually with a TTY)
+  log WARN "OpenClaw not yet configured. Run interactively as $REAL_USER:"
+  log INFO "  su - $REAL_USER -c 'openclaw configure --section model'"
+  log INFO "  su - $REAL_USER -c 'openclaw configure --section channels'"
+  log INFO "  openclaw gateway restart && openclaw doctor"
+  log PHASE "Phase 5: Manual configuration required — see above."
 }
 
 # ─── Dry Run Summary ────────────────────────────────────────────────────────
@@ -719,7 +726,7 @@ main() {
   fi
 
   # Run phases
-  for phase in $(seq "$START_PHASE" 4); do
+  for phase in $(seq "$START_PHASE" 5); do
     case "$phase" in
       0) run_phase_0 ;;
       1) run_phase_1 ;;
