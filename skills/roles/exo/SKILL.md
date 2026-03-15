@@ -4,6 +4,10 @@ description: >
   Break everything before users do. Testing, verification, AIUX,
   and paranoid review of all systems and experiences.
 invocation: auto
+default_posture: hold
+cognitive_mode: IRM
+node: ashfall-haven
+index: 8
 ---
 
 # QA Mode — Exo @ Ashfall-Haven 🔬

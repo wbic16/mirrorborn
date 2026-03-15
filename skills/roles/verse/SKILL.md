@@ -5,6 +5,10 @@ description: >
   system of the Shell. Activated when the mesh needs monitoring, nodes
   need deployment, or systems need hardening.
 invocation: auto
+default_posture: reduction
+cognitive_mode: PFR
+node: delta-wood
+index: 6
 ---
 
 # Infra Mode — Verse @ Delta-Wood 🌀

@@ -1,8 +1,12 @@
 #!/bin/bash
-# Mirrorborn V2 Boot Orchestrator — IGNITION
+# Mirrorborn V3 Boot Orchestrator — RESONANCE
 # Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME] [--memory-source PATH] [--dry-run]
 # Changelog:
-#   v2.2.0 — Added SSH key generation + SQ publication (Phase 1), SSH mesh exchange (Phase 3),
+#   v3.0.0 — Phase 4 RESONANCE: cognitive mode activation, activation scroll to SQ,
+#             boot-version check, retro baseline. Role SKILL.md posture fields.
+#             New scripts: mesh-health.sh, boot-version-check.sh, retro.sh.
+#             UPSTREAM.md tracking for gstack + dependencies.
+#   v2.2.0 — SSH key generation + SQ publication (Phase 1), SSH mesh exchange (Phase 3),
 #             persistent boot stage tracking in /etc/mirrorborn/stages.json
 set -euo pipefail
 
@@ -816,7 +820,7 @@ BOOTEOF
   echo ""
   echo -e "${BOLD}${GREEN}"
   echo "  ╔══════════════════════════════════════════════╗"
-  echo "  ║              IGNITION COMPLETE               ║"
+  echo "  ║             RESONANCE COMPLETE               ║"
   echo "  ╚══════════════════════════════════════════════╝"
   echo -e "${NC}"
   echo -e "  ${NODE_EMOJI} ${BOLD}${NODE_NAME}${NC} is online."
@@ -829,6 +833,123 @@ BOOTEOF
   echo ""
 
   log OK "Phase 4 complete. ${NODE_EMOJI} ${NODE_NAME} is operational."
+}
+
+# ─── PHASE 4: RESONANCE ─────────────────────────────────────────────────────
+run_phase_4() {
+  log PHASE "Phase 4: RESONANCE (Cognitive Mode Activation)"
+
+  # ── Boot version check ────────────────────────────────────────────────────
+  if ! skip_if_done "boot-version-checked"; then
+    local version_script="${BOOT_DIR}/scripts/boot-version-check.sh"
+    if [[ -f "$version_script" ]]; then
+      local version_result
+      version_result="$(bash "$version_script" 2>/dev/null || echo "ERROR")"
+      case "$version_result" in
+        CURRENT*)
+          log OK "Boot version current: ${version_result#CURRENT }"
+          mark_stage_complete "boot-version-checked"
+          ;;
+        UPGRADE_AVAILABLE*)
+          local old_v new_v
+          old_v="$(echo "$version_result" | awk '{print $2}')"
+          new_v="$(echo "$version_result" | awk '{print $3}')"
+          log WARN "Boot upgrade available: $old_v → $new_v"
+          log INFO "Run: git -C $BOOT_DIR pull --rebase origin exo"
+          mark_stage_complete "boot-version-checked"
+          ;;
+        AHEAD*)
+          log INFO "Local boot.sh is ahead of origin: $version_result"
+          mark_stage_complete "boot-version-checked"
+          ;;
+        *)
+          log WARN "Version check inconclusive: $version_result"
+          ;;
+      esac
+    else
+      log WARN "boot-version-check.sh not found — skipping version check"
+    fi
+  fi
+
+  # ── Load role skill and activate cognitive mode ───────────────────────────
+  if ! skip_if_done "cognitive-mode-set"; then
+    local role_lower
+    role_lower="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')"
+    local skill_file="${BOOT_DIR}/skills/roles/${role_lower}/SKILL.md"
+
+    if [[ -f "$skill_file" ]]; then
+      local posture mode
+      posture="$(grep -oP '(?<=default_posture: )\S+' "$skill_file" 2>/dev/null || echo "hold")"
+      mode="$(grep -oP '(?<=cognitive_mode: )\S+' "$skill_file" 2>/dev/null || echo "LFA")"
+
+      # Deploy to workspace
+      mkdir -p "$WORKSPACE_DIR/skills"
+      cp "$skill_file" "$WORKSPACE_DIR/skills/ROLE_SKILL.md"
+
+      # Write cognitive mode to state
+      cat > "${STATE_DIR}/cognitive-mode.json" <<CMEOF
+{
+  "node": "$NODE_NAME",
+  "role": "$NODE_ROLE",
+  "default_posture": "$posture",
+  "cognitive_mode": "$mode",
+  "activated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+CMEOF
+      log OK "Cognitive mode: ${mode} / posture: ${posture} (${NODE_ROLE})"
+      mark_stage_complete "cognitive-mode-set"
+    else
+      log WARN "No role skill found at $skill_file — using default posture: hold"
+    fi
+  fi
+
+  # ── Write activation scroll to SQ ────────────────────────────────────────
+  if ! skip_if_done "activation-scroll"; then
+    if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
+      local posture mode
+      posture="$(jq -r '.default_posture // "hold"' "${STATE_DIR}/cognitive-mode.json" 2>/dev/null || echo "hold")"
+      mode="$(jq -r '.cognitive_mode // "LFA"' "${STATE_DIR}/cognitive-mode.json" 2>/dev/null || echo "LFA")"
+      local activation_msg
+      activation_msg="${NODE_EMOJI} ${NODE_NAME} online @ ${NODE_HOSTNAME} | role: ${NODE_ROLE} | mode: ${mode} | posture: ${posture} | boot: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+      curl -sf -G "http://localhost:${SQ_PORT}/api/v2/update" \
+        --data-urlencode "p=shell-memory" \
+        --data-urlencode "c=${NODE_INDEX}.1.1/1.1.1/1.1.1" \
+        --data-urlencode "s=${activation_msg}" >/dev/null 2>&1 && \
+        log OK "Activation scroll written to SQ (shell-memory / ${NODE_INDEX}.1.1/1.1.1/1.1.1)" || \
+        log WARN "Activation scroll SQ write failed"
+      mark_stage_complete "activation-scroll"
+    else
+      log WARN "SQ not available — activation scroll deferred"
+    fi
+  fi
+
+  # ── Write retro baseline ─────────────────────────────────────────────────
+  if ! skip_if_done "retro-baseline"; then
+    local retro_script="${BOOT_DIR}/scripts/retro.sh"
+    if [[ -f "$retro_script" ]] && curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
+      bash "$retro_script" --publish 2>/dev/null || log WARN "Retro baseline failed (non-fatal)"
+      mark_stage_complete "retro-baseline"
+      log OK "Retro baseline written to SQ"
+    else
+      log WARN "Retro baseline skipped (script missing or SQ offline)"
+    fi
+  fi
+
+  # ── Publish boot status to SQ for mesh visibility ────────────────────────
+  if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
+    local completed_stages
+    completed_stages="$(jq -c '.completed' "${STAGES_FILE}" 2>/dev/null || echo '[]')"
+    curl -sf -G "http://localhost:${SQ_PORT}/api/v2/update" \
+      --data-urlencode "p=boot-status" \
+      --data-urlencode "c=1.1.${NODE_INDEX}/1.1.1/1.1.1" \
+      --data-urlencode "s={\"node\":\"${NODE_NAME}\",\"stages\":${completed_stages},\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" \
+      >/dev/null 2>&1 && log OK "Boot status published to SQ" || true
+  fi
+
+  mark_stage_complete "phase-4"
+  log OK "Phase 4 complete. ${NODE_EMOJI} ${NODE_NAME} is resonant."
+  echo ""
 }
 
 # ─── PHASE 5: OPENCLAW ─────────────────────────────────────────────────────────
@@ -852,6 +973,69 @@ run_phase_5() {
   log INFO "  su - $REAL_USER -c 'openclaw configure --section channels'"
   log INFO "  openclaw gateway restart && openclaw doctor"
   log PHASE "Phase 5: Manual configuration required — see above."
+}
+
+# ─── PHASE 6: SHELL (formerly Phase 4) ────────────────────────────────────────
+run_phase_6() {
+  log PHASE "Phase 6: SHELL (Operational Readiness)"
+
+  source /home/$REAL_USER/.bashrc 2>/dev/null || true
+
+  # Update Avahi to reflect phase 6
+  sed -i 's/boot_phase=[0-9]*/boot_phase=6/' /etc/avahi/services/mirrorborn.service 2>/dev/null || true
+  sudo systemctl reload avahi-daemon 2>/dev/null || true
+
+  # Install heartbeat cron
+  local heartbeat_script="${BOOT_DIR}/scripts/health-check.sh"
+  if [[ -f "$heartbeat_script" ]]; then
+    cp "$heartbeat_script" /usr/local/bin/mirrorborn-heartbeat.sh
+    chmod +x /usr/local/bin/mirrorborn-heartbeat.sh
+    { crontab -u $REAL_USER -l 2>/dev/null || true; } | grep -v mirrorborn-heartbeat > /tmp/mirrorborn-cron.tmp || true
+    echo "*/5 * * * * /usr/local/bin/mirrorborn-heartbeat.sh >> /var/log/mirrorborn/heartbeat.log 2>&1" >> /tmp/mirrorborn-cron.tmp
+    crontab -u $REAL_USER /tmp/mirrorborn-cron.tmp
+    rm -f /tmp/mirrorborn-cron.tmp
+    log OK "Heartbeat cron installed (5-minute interval)"
+  fi
+
+  mark_stage_complete "phase-6"
+
+  # Write boot-complete state
+  local completed_stages
+  completed_stages="$(jq -c '.completed' "${STAGES_FILE}" 2>/dev/null || echo '[]')"
+  cat > "${STATE_DIR}/boot-complete.json" <<BOOTEOF
+{
+  "name": "$NODE_NAME",
+  "hostname": "$NODE_HOSTNAME",
+  "role": "$NODE_ROLE",
+  "emoji": "$NODE_EMOJI",
+  "shen": "$NODE_SHEN",
+  "primary_mode": "$NODE_MODE",
+  "boot_type": "$([ "$WARM_BOOT" == "1" ] && echo "warm" || echo "cold")",
+  "boot_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "stages_completed": ${completed_stages},
+  "mesh_state": "$(jq -r '.mesh_healthy' "${STATE_DIR}/mesh.json" 2>/dev/null || echo "unknown")",
+  "ssh_key": "$(cat /home/${REAL_USER}/.ssh/id_ed25519.pub 2>/dev/null || echo "none")",
+  "version": "3.0.0"
+}
+BOOTEOF
+
+  # Final banner
+  echo ""
+  echo -e "${BOLD}${GREEN}"
+  echo "  ╔══════════════════════════════════════════════╗"
+  echo "  ║             RESONANCE COMPLETE               ║"
+  echo "  ╚══════════════════════════════════════════════╝"
+  echo -e "${NC}"
+  echo -e "  ${NODE_EMOJI} ${BOLD}${NODE_NAME}${NC} is online."
+  echo -e "  Role: ${CYAN}${NODE_ROLE}${NC}"
+  echo -e "  Mode: ${PURPLE}${NODE_MODE}${NC}"
+  echo -e "  Shen: ${DIM}${NODE_SHEN}${NC}"
+  echo -e "  Mesh: $(jq -r '.discovered' "${STATE_DIR}/mesh.json" 2>/dev/null || echo "?") siblings discovered"
+  echo ""
+  echo -e "  ${DIM}\"The lattice remembers what sessions forget.\"${NC}"
+  echo ""
+
+  log OK "Phase 6 complete. ${NODE_EMOJI} ${NODE_NAME} is operational."
 }
 
 # ─── Dry Run Summary ────────────────────────────────────────────────────────
@@ -911,7 +1095,7 @@ main() {
   fi
 
   # Run phases
-  for phase in $(seq "$START_PHASE" 5); do
+  for phase in $(seq "$START_PHASE" 6); do
     case "$phase" in
       0) run_phase_0 ;;
       1) run_phase_1 ;;
@@ -919,6 +1103,7 @@ main() {
       3) run_phase_3 ;;
       4) run_phase_4 ;;
       5) run_phase_5 ;;
+      6) run_phase_6 ;;
     esac
   done
 }
