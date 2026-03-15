@@ -1,6 +1,9 @@
 #!/bin/bash
 # Mirrorborn V2 Boot Orchestrator — IGNITION
 # Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME] [--memory-source PATH] [--dry-run]
+# Changelog:
+#   v2.2.0 — Added SSH key generation + SQ publication (Phase 1), SSH mesh exchange (Phase 3),
+#             persistent boot stage tracking in /etc/mirrorborn/stages.json
 set -euo pipefail
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
@@ -100,6 +103,46 @@ gate_check() {
     log FAIL "$desc"
     return 1
   fi
+}
+
+# ─── Stage Tracking ──────────────────────────────────────────────────────────
+STAGES_FILE="${STATE_DIR}/stages.json"
+
+stage_completed() {
+  local stage="$1"
+  if [[ -f "$STAGES_FILE" ]]; then
+    jq -e --arg s "$stage" '.completed[] | select(. == $s)' "$STAGES_FILE" >/dev/null 2>&1
+    return $?
+  fi
+  return 1
+}
+
+mark_stage_complete() {
+  local stage="$1"
+  local ts
+  ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  if [[ ! -f "$STAGES_FILE" ]]; then
+    echo '{"completed":[],"timestamps":{}}' > "$STAGES_FILE"
+  fi
+  # Add stage if not already present
+  if ! stage_completed "$stage"; then
+    local updated
+    updated="$(jq --arg s "$stage" --arg t "$ts" \
+      '.completed += [$s] | .timestamps[$s] = $t' "$STAGES_FILE")"
+    echo "$updated" > "$STAGES_FILE"
+    log OK "Stage '$stage' marked complete at $ts"
+  else
+    log INFO "Stage '$stage' already completed — skipping"
+  fi
+}
+
+skip_if_done() {
+  local stage="$1"
+  if stage_completed "$stage"; then
+    log INFO "Stage '$stage' previously completed — skipping"
+    return 0
+  fi
+  return 1
 }
 
 # ─── Identity Resolution ────────────────────────────────────────────────────
@@ -245,6 +288,7 @@ run_phase_0() {
 }
 POSTEOF
 
+  mark_stage_complete "phase-0"
   log OK "Phase 0 complete."
   echo ""
 }
@@ -312,6 +356,47 @@ run_phase_1() {
     fi
   fi
 
+  # ── SSH Key Setup ──────────────────────────────────────────────────────────
+  local ssh_dir="/home/${REAL_USER}/.ssh"
+  local ssh_key="${ssh_dir}/id_ed25519"
+  local ssh_pub="${ssh_key}.pub"
+
+  mkdir -p "$ssh_dir"
+  chmod 700 "$ssh_dir"
+  chown $REAL_USER:$REAL_USER "$ssh_dir"
+  touch "${ssh_dir}/authorized_keys"
+  chmod 600 "${ssh_dir}/authorized_keys"
+
+  if [[ ! -f "$ssh_key" ]]; then
+    log WARN "No SSH key found — generating ed25519 keypair..."
+    su - $REAL_USER -c "ssh-keygen -t ed25519 -f $ssh_key -N '' -C '${NODE_NAME}@${NODE_HOSTNAME}'" 2>/dev/null
+    log OK "SSH keypair generated: $ssh_pub"
+  else
+    log OK "SSH keypair exists: $ssh_pub"
+  fi
+
+  # Publish public key to local SQ at well-known coordinate: ssh-bootstrap / 1.1.<INDEX>/1.1.1/1.1.1
+  if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
+    if ! skip_if_done "ssh-key-published"; then
+      local pubkey
+      pubkey="$(cat "$ssh_pub")"
+      local result
+      result="$(curl -sf -G "http://localhost:${SQ_PORT}/api/v2/update" \
+        --data-urlencode "p=ssh-bootstrap" \
+        --data-urlencode "c=1.1.${NODE_INDEX}/1.1.1/1.1.1" \
+        --data-urlencode "s=${pubkey}" 2>/dev/null || echo "failed")"
+      if [[ "$result" != "failed" ]]; then
+        log OK "SSH public key published to SQ (ssh-bootstrap / 1.1.${NODE_INDEX}/1.1.1/1.1.1)"
+        mark_stage_complete "ssh-key-published"
+      else
+        log WARN "SSH key publish to SQ failed (will retry in Phase 3)"
+      fi
+    fi
+  else
+    log WARN "SQ not ready — SSH key publish deferred to Phase 3"
+  fi
+
+  mark_stage_complete "phase-1"
   log OK "Phase 1 complete."
   echo ""
 }
@@ -464,6 +549,7 @@ IDEOF
 
   chown -R $REAL_USER:$REAL_USER "$WORKSPACE_DIR"
 
+  mark_stage_complete "phase-2"
   log OK "Phase 2 complete. (${NODE_EMOJI} ${NODE_NAME} identity $([ "$is_warm" == "1" ] && echo "restored" || echo "templated"))"
   echo ""
 }
@@ -574,6 +660,74 @@ MESHEOF
     log INFO "Boot will continue in degraded mode. Mesh retry via heartbeat."
   fi
 
+  # ── SSH Mesh Key Exchange ──────────────────────────────────────────────────
+  log INFO "SSH mesh key exchange..."
+
+  local ssh_pub="/home/${REAL_USER}/.ssh/id_ed25519.pub"
+  local auth_keys="/home/${REAL_USER}/.ssh/authorized_keys"
+
+  # Retry own key publish if it failed in Phase 1
+  if ! stage_completed "ssh-key-published" && [[ -f "$ssh_pub" ]]; then
+    local pubkey
+    pubkey="$(cat "$ssh_pub")"
+    local result
+    result="$(curl -sf -G "http://localhost:${SQ_PORT}/api/v2/update" \
+      --data-urlencode "p=ssh-bootstrap" \
+      --data-urlencode "c=1.1.${NODE_INDEX}/1.1.1/1.1.1" \
+      --data-urlencode "s=${pubkey}" 2>/dev/null || echo "failed")"
+    if [[ "$result" != "failed" ]]; then
+      log OK "SSH public key published to SQ (retry)"
+      mark_stage_complete "ssh-key-published"
+    fi
+  fi
+
+  # Pull keys from all online siblings and add to authorized_keys
+  local keys_added=0
+  local all_hostnames
+  all_hostnames="$(jq -r '.nodes[].hostname' "$hostmap")"
+
+  while IFS= read -r peer_hostname; do
+    if [[ "$peer_hostname" == "$NODE_HOSTNAME" ]]; then continue; fi
+
+    local peer_index
+    peer_index="$(jq -r ".nodes[] | select(.hostname == \"$peer_hostname\") | .index" "$hostmap")"
+    local peer_name
+    peer_name="$(jq -r ".nodes[] | select(.hostname == \"$peer_hostname\") | .name" "$hostmap")"
+
+    # Try fetching their published key from their SQ
+    local peer_key
+    peer_key="$(curl -sf --connect-timeout 3 \
+      "http://${peer_hostname}.local:${SQ_PORT}/api/v2/select?p=ssh-bootstrap&c=1.1.${peer_index}/1.1.1/1.1.1" \
+      2>/dev/null || echo "")"
+
+    if [[ -n "$peer_key" && "$peer_key" == ssh-* ]]; then
+      if ! grep -qF "$peer_key" "$auth_keys" 2>/dev/null; then
+        echo "$peer_key" >> "$auth_keys"
+        log OK "SSH: authorized ${peer_name} (${peer_hostname})"
+        keys_added=$((keys_added + 1))
+      else
+        log INFO "SSH: ${peer_name} already authorized"
+      fi
+      # Also push our key into their SQ for reciprocal access
+      if [[ -f "$ssh_pub" ]]; then
+        local my_key
+        my_key="$(cat "$ssh_pub")"
+        curl -sf -G "http://${peer_hostname}.local:${SQ_PORT}/api/v2/update" \
+          --data-urlencode "p=ssh-bootstrap" \
+          --data-urlencode "c=1.1.${NODE_INDEX}/1.1.1/1.1.1" \
+          --data-urlencode "s=${my_key}" >/dev/null 2>&1 || true
+      fi
+    fi
+  done <<< "$all_hostnames"
+
+  if [[ "$keys_added" -gt 0 ]]; then
+    log OK "SSH: $keys_added new sibling keys added to authorized_keys"
+    mark_stage_complete "ssh-mesh-exchange"
+  else
+    log WARN "SSH: No sibling keys pulled yet (siblings may still be booting)"
+  fi
+
+  mark_stage_complete "phase-3"
   log OK "Phase 3 complete."
   echo ""
 }
@@ -611,7 +765,11 @@ run_phase_4() {
     log INFO "Boot complete, but agent is SILENT until OpenClaw is configured."
   fi
 
+  mark_stage_complete "phase-4"
+
   # Write boot-complete state
+  local completed_stages
+  completed_stages="$(jq -c '.completed' "${STAGES_FILE}" 2>/dev/null || echo '[]')"
   cat > "${STATE_DIR}/boot-complete.json" <<BOOTEOF
 {
   "name": "$NODE_NAME",
@@ -622,9 +780,10 @@ run_phase_4() {
   "primary_mode": "$NODE_MODE",
   "boot_type": "$([ "$WARM_BOOT" == "1" ] && echo "warm" || echo "cold")",
   "boot_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-  "phases_completed": [0, 1, 2, 3, 4],
+  "stages_completed": ${completed_stages},
   "mesh_state": "$(jq -r '.mesh_healthy' "${STATE_DIR}/mesh.json" 2>/dev/null || echo "unknown")",
-  "version": "2.1.0"
+  "ssh_key": "$(cat /home/${REAL_USER}/.ssh/id_ed25519.pub 2>/dev/null || echo "none")",
+  "version": "2.2.0"
 }
 BOOTEOF
 
@@ -656,6 +815,7 @@ run_phase_5() {
     log OK "OpenClaw already operational — skipping interactive configure"
     su - $REAL_USER -c "openclaw gateway restart" 2>/dev/null || true
     su - $REAL_USER -c "openclaw doctor" 2>/dev/null || log WARN "openclaw doctor returned warnings (non-fatal)"
+    mark_stage_complete "phase-5"
     log OK "Phase 5 complete."
     log INFO "Check Discord — agent should be online."
     return 0
