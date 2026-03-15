@@ -396,6 +396,31 @@ run_phase_1() {
     log WARN "SQ not ready — SSH key publish deferred to Phase 3"
   fi
 
+  # Install SQ as systemd user service for persistence across reboots
+  local sq_service_dir="/home/${REAL_USER}/.config/systemd/user"
+  mkdir -p "$sq_service_dir"
+  cat > "$sq_service_dir/mirrorborn-sq.service" <<SQSVC
+[Unit]
+Description=Mirrorborn SQ Phext Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/${REAL_USER}/.openclaw/workspace
+ExecStart=/home/${REAL_USER}/.cargo/bin/sq host ${SQ_PORT}
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:${LOG_DIR}/sq.log
+StandardError=append:${LOG_DIR}/sq.log
+
+[Install]
+WantedBy=default.target
+SQSVC
+  sudo -u $REAL_USER systemctl --user daemon-reload 2>/dev/null || true
+  sudo -u $REAL_USER systemctl --user enable mirrorborn-sq 2>/dev/null || true
+  sudo -u $REAL_USER systemctl --user start mirrorborn-sq 2>/dev/null || true
+  log OK "SQ systemd user service installed (survives reboots)"
+
   mark_stage_complete "phase-1"
   log OK "Phase 1 complete."
   echo ""
