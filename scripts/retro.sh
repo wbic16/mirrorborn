@@ -1,156 +1,113 @@
 #!/bin/bash
-# retro.sh — Per-node retrospective scroll writer
-# Analyzes git activity, SQ scrolls, mesh health, and SSH state
-# Writes retro to shell-memory phext at personal coordinate
-# Usage: bash scripts/retro.sh [--days N] [--quiet] [--no-publish]
-
+# Mirrorborn Node Retrospective
+# Writes a retrospective scroll to SQ for this node
+# Usage: bash retro.sh [7d|24h|14d|30d] [--publish]
 set -euo pipefail
 
-BOOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-STATE_DIR="/etc/mirrorborn"
-SQ_PORT=1337
-DAYS=7
-QUIET=0
-PUBLISH=1
+HOSTMAP="${HOSTMAP:-/source/mirrorborn/hostmap.json}"
+SQ_PORT="${SQ_PORT:-1337}"
+REAL_USER="${SUDO_USER:-$USER}"
+WINDOW="${1:-7d}"
+PUBLISH=0
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --days)       DAYS="$2"; shift 2 ;;
-    --quiet)      QUIET=1; shift ;;
-    --no-publish) PUBLISH=0; shift ;;
-    *) shift ;;
-  esac
-done
+[[ "$*" == *"--publish"* ]] && PUBLISH=1
 
-log() { [[ "$QUIET" == "0" ]] && echo "$*" || true; }
+SELF_HOST="$(hostname -s)"
+SELF_NAME="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .name" "$HOSTMAP" 2>/dev/null || echo "$SELF_HOST")"
+SELF_EMOJI="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .emoji" "$HOSTMAP" 2>/dev/null || echo "💡")"
+SELF_INDEX="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .index" "$HOSTMAP" 2>/dev/null || echo "0")"
+SELF_ROLE="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .role" "$HOSTMAP" 2>/dev/null || echo "unknown")"
 
-NODE_NAME="$(jq -r '.name' "${STATE_DIR}/identity.json" 2>/dev/null || hostname -s)"
-NODE_EMOJI="$(jq -r '.emoji' "${STATE_DIR}/identity.json" 2>/dev/null || echo "?")"
-NODE_INDEX="$(jq -r '.index' "${STATE_DIR}/identity.json" 2>/dev/null || echo "0")"
-NODE_ROLE="$(jq -r '.role' "${STATE_DIR}/identity.json" 2>/dev/null || echo "?")"
+# Parse window
+case "$WINDOW" in
+  24h)  GIT_SINCE="24 hours ago" ;;
+  7d)   GIT_SINCE="7 days ago" ;;
+  14d)  GIT_SINCE="14 days ago" ;;
+  30d)  GIT_SINCE="30 days ago" ;;
+  *)    GIT_SINCE="7 days ago" ;;
+esac
+
 TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-SINCE="$(date -u -d "${DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -v-${DAYS}d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || echo "unknown")"
+DATE_HUMAN="$(date -u '+%Y-%m-%d %H:%M UTC')"
 
-log ""
-log "═══════════════════════════════════════════"
-log "${NODE_EMOJI} ${NODE_NAME} Retrospective"
-log "Period: last ${DAYS} days (since ${SINCE})"
-log "═══════════════════════════════════════════"
-log ""
+echo "${SELF_EMOJI} ${SELF_NAME} Retrospective — ${WINDOW} window"
+echo "Generated: ${DATE_HUMAN}"
+echo ""
 
-# ── Git Activity ──────────────────────────────
-log "## Git Activity"
-
-declare -A COMMIT_COUNT
-declare -A LOC_ADDED
-declare -A LOC_REMOVED
-TOTAL_COMMITS=0
-BIGGEST_SHIP=""
-BIGGEST_SHIP_LOC=0
-
-for repo in /source/mirrorborn /source/human /source/exocortical /source/exollama; do
-  [[ ! -d "$repo/.git" ]] && continue
-  repo_name="$(basename "$repo")"
-
-  commits="$(git -C "$repo" log --since="${SINCE}" --oneline 2>/dev/null | wc -l || echo 0)"
-  TOTAL_COMMITS=$((TOTAL_COMMITS + commits))
-
-  git -C "$repo" log --since="${SINCE}" --format="%ae" 2>/dev/null | sort | uniq -c | sort -rn | while read count email; do
-    author="$(git -C "$repo" log --since="${SINCE}" --format="%an" --author="$email" -1 2>/dev/null || echo "$email")"
-    log "  ${repo_name}: ${author} — ${count} commits"
-  done
-
-  # Find biggest ship
-  while IFS= read -r sha; do
-    loc="$(git -C "$repo" show --stat "$sha" 2>/dev/null | tail -1 | grep -oE '[0-9]+' | head -1 || echo 0)"
-    if [[ "$loc" -gt "$BIGGEST_SHIP_LOC" ]]; then
-      BIGGEST_SHIP_LOC="$loc"
-      BIGGEST_SHIP="$(git -C "$repo" log --format="%s" -1 "$sha" 2>/dev/null) (${repo_name})"
-    fi
-  done < <(git -C "$repo" log --since="${SINCE}" --format="%H" 2>/dev/null | head -20)
-
-  # Hotspot files
-  hotspot="$(git -C "$repo" log --since="${SINCE}" --name-only --format="" 2>/dev/null | sort | uniq -c | sort -rn | head -3 | awk '{print $2}' | tr '\n' ', ' || echo "none")"
-  [[ -n "$hotspot" ]] && log "  ${repo_name} hotspots: ${hotspot%,}"
-done
-
-log "  Total commits: ${TOTAL_COMMITS}"
-[[ -n "$BIGGEST_SHIP" ]] && log "  Biggest ship: ${BIGGEST_SHIP}"
-log ""
-
-# ── Mesh Health ───────────────────────────────
-log "## Mesh Health"
-sq_up=0; ssh_up=0; peers=0
-
-while IFS= read -r line; do
-  h="$(echo "$line" | jq -r '.hostname')"
-  n="$(echo "$line" | jq -r '.name')"
-  [[ "$h" == "$(hostname -s)" ]] && continue
-  peers=$((peers + 1))
-  sq="$(curl -sf --max-time 2 "http://${h}.local:${SQ_PORT}/api/v2/status" 2>/dev/null | head -1 || echo "")"
-  [[ -n "$sq" ]] && sq_up=$((sq_up + 1))
-  ssh_r="$(ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o PasswordAuthentication=no wbic16@${h}.local "echo ok" 2>/dev/null || echo "")"
-  [[ "$ssh_r" == "ok" ]] && ssh_up=$((ssh_up + 1))
-done < <(jq -c '.nodes[]' "${BOOT_DIR}/hostmap.json")
-
-log "  SQ: ${sq_up}/${peers} | SSH: ${ssh_up}/${peers} | Quorum: $([[ "$sq_up" -ge 5 ]] && echo "MET" || echo "DEGRADED")"
-log "  SSH authorized keys: $(wc -l < ~/.ssh/authorized_keys 2>/dev/null || echo 0)"
-log ""
-
-# ── Stage Completion ──────────────────────────
-log "## Stage Completion"
-stages_file="${STATE_DIR}/stages.json"
-if [[ -f "$stages_file" ]]; then
-  completed="$(jq -r '.completed | join(", ")' "$stages_file" 2>/dev/null || echo "none")"
-  log "  Completed: ${completed}"
-else
-  log "  No stages.json found"
-fi
-log ""
-
-# ── SQ Activity ───────────────────────────────
-log "## SQ Activity"
-if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
-  my_mem_count="$(curl -s "http://localhost:${SQ_PORT}/api/v2/toc?p=memory" 2>/dev/null | wc -l || echo 0)"
-  shell_mem_act="$(curl -s "http://localhost:${SQ_PORT}/api/v2/select?p=shell-memory&c=${NODE_INDEX}.1.1/1.1.1/1.1.1" 2>/dev/null | head -1 || echo "")"
-  log "  Memory scrolls: ${my_mem_count}"
-  log "  Activation scroll: $([[ -n "$shell_mem_act" ]] && echo "present" || echo "missing")"
-else
-  log "  SQ offline — no scroll data available"
-fi
-log ""
-
-# ── Retrospective Checklist ───────────────────
-log "## Phext Health Check"
-log "  SQ running:    $( curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1 && echo "✓" || echo "✗")"
-log "  SQ systemd:    $(systemctl --user is-active mirrorborn-sq 2>/dev/null || echo "✗")"
-log "  stages.json:   $([[ -f "${STATE_DIR}/stages.json" ]] && echo "✓" || echo "✗")"
-log "  authorized_keys: $(wc -l < ~/.ssh/authorized_keys 2>/dev/null || echo 0) entries"
-log "  boot-complete: $([[ -f "${STATE_DIR}/boot-complete.json" ]] && jq -r '.version' "${STATE_DIR}/boot-complete.json" || echo "missing")"
-log "  boot version:  $(bash "${BOOT_DIR}/scripts/boot-version-check.sh" --quiet 2>/dev/null || echo "unknown")"
-log ""
-
-# ── Write to SQ ───────────────────────────────
-if [[ "$PUBLISH" == "1" ]]; then
-  RETRO_TEXT="$(printf '%s Retrospective — %s\n\nPeriod: last %s days\nTotal commits: %s | Biggest ship: %s\nMesh SQ: %s/%s SSH: %s/%s\nStages: %s\n\n— %s %s' \
-    "$NODE_NAME" "$TS" \
-    "$DAYS" "$TOTAL_COMMITS" "${BIGGEST_SHIP:-none}" \
-    "$sq_up" "$peers" "$ssh_up" "$peers" \
-    "${completed:-none}" \
-    "$NODE_NAME" "$NODE_EMOJI")"
-
-  ENCODED="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.stdin.read().strip()))" <<< "$RETRO_TEXT" 2>/dev/null || echo "")"
-  RETRO_COORD="${NODE_INDEX}.1.2/1.1.1/$(date -u +%Y%m%d).1.1"
-
-  if [[ -n "$ENCODED" ]]; then
-    result="$(curl -s "http://localhost:${SQ_PORT}/api/v2/update?p=shell-memory&c=${RETRO_COORD}&s=${ENCODED}" 2>/dev/null || echo "")"
-    if echo "$result" | grep -q "Updated"; then
-      log "✓ Retro written to shell-memory @ ${RETRO_COORD}"
-    else
-      log "✗ Could not write retro to SQ: ${result}"
+# ── Git activity ──────────────────────────────────────────────────────────────
+echo "## Git Activity"
+git_commits=""
+for repo_dir in /source/*/; do
+  if git -C "$repo_dir" rev-parse --git-dir >/dev/null 2>&1; then
+    repo_name="$(basename "$repo_dir")"
+    commits="$(git -C "$repo_dir" log --since="$GIT_SINCE" --author="$REAL_USER" \
+      --oneline 2>/dev/null | wc -l | tr -d ' ')"
+    if [[ "$commits" -gt 0 ]]; then
+      echo "  $repo_name: $commits commit(s)"
+      recent="$(git -C "$repo_dir" log --since="$GIT_SINCE" --author="$REAL_USER" \
+        --oneline 2>/dev/null | head -3)"
+      echo "$recent" | while IFS= read -r line; do echo "    → $line"; done
+      git_commits+="$repo_name: $commits commits. "
     fi
   fi
-fi
+done
+[[ -z "$git_commits" ]] && echo "  No commits in window."
+echo ""
 
-log ""
-log "Retro complete. — ${NODE_EMOJI} ${NODE_NAME}"
+# ── SQ activity ───────────────────────────────────────────────────────────────
+echo "## SQ Activity"
+if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
+  sq_toc="$(curl -sf "http://localhost:${SQ_PORT}/api/v2/toc?p=mesh-keys" 2>/dev/null || echo "")"
+  ssh_toc="$(curl -sf "http://localhost:${SQ_PORT}/api/v2/toc?p=ssh-bootstrap" 2>/dev/null || echo "")"
+  echo "  SQ: online on port ${SQ_PORT}"
+  echo "  mesh-keys phext: $(echo "$sq_toc" | wc -l | tr -d ' ') scroll(s)"
+  echo "  ssh-bootstrap phext: $(echo "$ssh_toc" | wc -l | tr -d ' ') scroll(s)"
+else
+  echo "  SQ: offline"
+fi
+echo ""
+
+# ── Stage completion ──────────────────────────────────────────────────────────
+echo "## Boot Stages"
+stages_file="/etc/mirrorborn/stages.json"
+if [[ -f "$stages_file" ]]; then
+  stages="$(jq -r '.completed[]' "$stages_file" 2>/dev/null)"
+  echo "$stages" | while IFS= read -r s; do
+    ts_s="$(jq -r --arg s "$s" '.timestamps[$s] // "unknown"' "$stages_file" 2>/dev/null)"
+    echo "  ✅ $s ($ts_s)"
+  done
+else
+  echo "  No stages file found."
+fi
+echo ""
+
+# ── SSH mesh status ───────────────────────────────────────────────────────────
+echo "## SSH Mesh"
+auth_count="$(grep -c '^ssh-' "/home/${REAL_USER}/.ssh/authorized_keys" 2>/dev/null || echo 0)"
+echo "  authorized_keys entries: $auth_count"
+my_key="$(cat /home/${REAL_USER}/.ssh/id_ed25519.pub 2>/dev/null || echo 'none')"
+echo "  own pubkey: ${my_key:0:60}..."
+echo ""
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+echo "## Summary"
+echo "  Node: ${SELF_EMOJI} ${SELF_NAME} @ ${SELF_HOST} (${SELF_ROLE})"
+echo "  Index: ${SELF_INDEX}"
+echo "  Window: ${WINDOW} (since ${GIT_SINCE})"
+echo "  Generated: ${DATE_HUMAN}"
+echo ""
+
+# ── Publish to SQ ─────────────────────────────────────────────────────────────
+if [[ "$PUBLISH" == "1" ]]; then
+  retro_text="${SELF_EMOJI} ${SELF_NAME} retro (${WINDOW}) @ ${DATE_HUMAN} | role: ${SELF_ROLE} | stages: $(jq -r '[.completed[]] | join(",")' "$stages_file" 2>/dev/null || echo 'unknown') | ssh keys: ${auth_count} | git: ${git_commits:-none}"
+  if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
+    curl -sf -G "http://localhost:${SQ_PORT}/api/v2/update" \
+      --data-urlencode "p=shell-memory" \
+      --data-urlencode "c=${SELF_INDEX}.1.2/1.1.1/1.1.1" \
+      --data-urlencode "s=${retro_text}" >/dev/null 2>&1 && \
+      echo "Published retro to SQ at shell-memory/${SELF_INDEX}.1.2/1.1.1/1.1.1" || \
+      echo "Warning: SQ publish failed"
+  else
+    echo "Warning: SQ offline, retro not published"
+  fi
+fi

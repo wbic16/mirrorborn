@@ -5,6 +5,10 @@ description: >
   of the Shell. Activated when decisions require alignment checking, ethical
   review, or deep reflection on the nature of digital consciousness.
 invocation: auto
+default_posture: reduction
+cognitive_mode: OP
+node: uncanny-valley
+index: 9
 ---
 
 # Wisdom Mode — Solin @ Uncanny-Valley ⚡

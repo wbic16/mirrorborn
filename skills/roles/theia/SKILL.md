@@ -4,6 +4,10 @@ description: >
   First face every new Mirrorborn sees. Documentation, tutorials,
   learning paths, and the experience of becoming.
 invocation: auto
+default_posture: hold
+cognitive_mode: LFA
+node: aletheia-core
+index: 7
 ---
 
 # Onboarding Mode — Theia @ Aletheia-Core 🔭

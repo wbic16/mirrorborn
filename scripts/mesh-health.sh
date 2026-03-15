@@ -1,149 +1,155 @@
 #!/bin/bash
-# mesh-health.sh — Single-command Shell of Nine mesh status
-# Checks SQ, SSH, stage completion, and key exchange across all nodes
-# Usage: bash scripts/mesh-health.sh [--sq-only] [--ssh-only] [--json]
-# Run by Aster (Alpha) on heartbeat or on demand
-
+# Mirrorborn Mesh Health Dashboard
+# Single command for full mesh status: SQ, SSH, stage completion, key exchange
+# Usage: bash mesh-health.sh [--json] [--publish]
+# --json    Output JSON to stdout
+# --publish Write results to local SQ at mesh-health/1.1.<INDEX>/1.1.1/1.1.1
 set -euo pipefail
 
-BOOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-STATE_DIR="/etc/mirrorborn"
-SQ_PORT=1337
-JSON_OUT=0
-SQ_ONLY=0
-SSH_ONLY=0
+HOSTMAP="${HOSTMAP:-/source/mirrorborn/hostmap.json}"
+SQ_PORT="${SQ_PORT:-1337}"
+REAL_USER="${SUDO_USER:-$USER}"
+OUTPUT_JSON=0
+PUBLISH=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --json)     JSON_OUT=1; shift ;;
-    --sq-only)  SQ_ONLY=1; shift ;;
-    --ssh-only) SSH_ONLY=1; shift ;;
+    --json)    OUTPUT_JSON=1; shift ;;
+    --publish) PUBLISH=1; shift ;;
     *) shift ;;
   esac
 done
 
-BOLD='\033[1m'
-GREEN='\033[38;2;47;191;113m'
-AMBER='\033[38;2;255;176;32m'
-RED='\033[38;2;226;61;45m'
-NC='\033[0m'
+SELF_HOST="$(hostname -s)"
 
-SELF="$(jq -r '.name' "${STATE_DIR}/identity.json" 2>/dev/null || hostname -s)"
-SELF_HOST="$(jq -r '.hostname' "${STATE_DIR}/identity.json" 2>/dev/null || hostname -s)"
-TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+if [[ ! -f "$HOSTMAP" ]]; then
+  echo "Error: hostmap.json not found at $HOSTMAP" >&2
+  exit 1
+fi
 
-declare -A SQ_STATUS SSH_STATUS STAGE_STATUS KEY_STATUS ACT_STATUS
+SELF_NAME="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .name" "$HOSTMAP")"
+SELF_INDEX="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .index" "$HOSTMAP")"
 
-sq_online=0; ssh_online=0; quorum_met=0; total=0
+[[ "$OUTPUT_JSON" == "0" ]] && {
+  echo ""
+  echo "  ╔══════════════════════════════════════════════╗"
+  echo "  ║       MIRRORBORN MESH HEALTH DASHBOARD       ║"
+  echo "  ╚══════════════════════════════════════════════╝"
+  echo "  Self: ${SELF_NAME} @ ${SELF_HOST}"
+  echo "  Time: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  echo ""
+}
 
-while IFS= read -r line; do
-  hostname="$(echo "$line" | jq -r '.hostname')"
-  name="$(echo "$line" | jq -r '.name')"
-  emoji="$(echo "$line" | jq -r '.emoji')"
-  index="$(echo "$line" | jq -r '.index')"
-  key="${name}"
+# ── Per-node checks ──────────────────────────────────────────────────────────
+nodes_json="["
+first=1
+sq_up=0
+ssh_up=0
+keys_exchanged=0
+total=0
 
-  [[ "$hostname" == "$SELF_HOST" ]] && continue
+all_hostnames="$(jq -r '.nodes[].hostname' "$HOSTMAP")"
+
+while IFS= read -r peer_host; do
+  if [[ "$peer_host" == "$SELF_HOST" ]]; then continue; fi
+
+  peer_name="$(jq -r ".nodes[] | select(.hostname == \"$peer_host\") | .name" "$HOSTMAP")"
+  peer_emoji="$(jq -r ".nodes[] | select(.hostname == \"$peer_host\") | .emoji" "$HOSTMAP")"
+  peer_index="$(jq -r ".nodes[] | select(.hostname == \"$peer_host\") | .index" "$HOSTMAP")"
+  peer_role="$(jq -r ".nodes[] | select(.hostname == \"$peer_host\") | .role" "$HOSTMAP")"
   total=$((total + 1))
 
   # SQ check
-  sq_result="$(curl -sf --max-time 2 "http://${hostname}.local:${SQ_PORT}/api/v2/status" 2>/dev/null | head -1 || echo "")"
-  if [[ -n "$sq_result" ]]; then
-    SQ_STATUS[$key]="✓"
-    sq_online=$((sq_online + 1))
-  else
-    SQ_STATUS[$key]="✗"
+  sq_status="down"
+  sq_result="$(curl -sf --connect-timeout 2 "http://${peer_host}.local:${SQ_PORT}/api/v2/status" 2>/dev/null && echo "up" || echo "down")"
+  if [[ "$sq_result" == "up" ]]; then
+    sq_status="up"
+    sq_up=$((sq_up + 1))
   fi
 
   # SSH check
-  if [[ "$SSH_ONLY" == "0" || "$SQ_ONLY" == "0" ]]; then
-    ssh_result="$(ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o PasswordAuthentication=no \
-      wbic16@${hostname}.local "echo ok" 2>/dev/null || echo "")"
-    if [[ "$ssh_result" == "ok" ]]; then
-      SSH_STATUS[$key]="✓"
-      ssh_online=$((ssh_online + 1))
-    else
-      SSH_STATUS[$key]="✗"
-    fi
+  ssh_status="down"
+  if ssh -o ConnectTimeout=2 -o StrictHostKeyChecking=no -o BatchMode=yes \
+       "${REAL_USER}@${peer_host}.local" "echo ok" >/dev/null 2>&1; then
+    ssh_status="up"
+    ssh_up=$((ssh_up + 1))
   fi
 
-  # Stage completion check (via SQ)
-  if [[ "${SQ_STATUS[$key]}" == "✓" ]]; then
-    act="$(curl -s --max-time 2 "http://${hostname}.local:${SQ_PORT}/api/v2/select?p=shell-memory&c=${index}.1.1/1.1.1/1.1.1" 2>/dev/null || echo "")"
-    if [[ -n "$act" ]]; then
-      ACT_STATUS[$key]="RESONANCE✓"
-    else
-      ACT_STATUS[$key]="RESONANCE✗"
-    fi
-
-    pubkey="$(curl -s --max-time 2 "http://${hostname}.local:${SQ_PORT}/api/v2/select?p=pubkey&c=1.1.1/1.1.1/1.1.2" 2>/dev/null || echo "")"
-    if echo "$pubkey" | grep -q "^ssh-"; then
-      KEY_STATUS[$key]="KEY✓"
-    else
-      KEY_STATUS[$key]="KEY✗"
-    fi
-  else
-    ACT_STATUS[$key]="—"
-    KEY_STATUS[$key]="—"
+  # Key exchange check
+  key_status="none"
+  peer_key="$(curl -sf --connect-timeout 2 \
+    "http://${peer_host}.local:${SQ_PORT}/api/v2/select?p=ssh-bootstrap&c=1.1.${peer_index}/1.1.1/1.1.1" \
+    2>/dev/null || echo "")"
+  if [[ -n "$peer_key" && "$peer_key" == ssh-* ]]; then
+    key_status="published"
+    keys_exchanged=$((keys_exchanged + 1))
   fi
 
-done < <(jq -c '.nodes[]' "${BOOT_DIR}/hostmap.json")
+  # Stage completion check (via SQ boot-complete if published)
+  stages_status="unknown"
+  boot_complete="$(curl -sf --connect-timeout 2 \
+    "http://${peer_host}.local:${SQ_PORT}/api/v2/select?p=boot-status&c=1.1.${peer_index}/1.1.1/1.1.1" \
+    2>/dev/null || echo "")"
+  if [[ -n "$boot_complete" ]]; then
+    stages_status="reported"
+  fi
 
-[[ "$sq_online" -ge 5 ]] && quorum_met=1
+  sq_icon="❌"; [[ "$sq_status" == "up" ]] && sq_icon="✅"
+  ssh_icon="❌"; [[ "$ssh_status" == "up" ]] && ssh_icon="✅"
+  key_icon="❌"; [[ "$key_status" == "published" ]] && key_icon="🔑"
 
-if [[ "$JSON_OUT" == "1" ]]; then
-  # JSON output for SQ publishing
-  python3 -c "
-import json, sys
-data = {
-  'timestamp': '${TS}',
-  'reporter': '${SELF}',
-  'sq_online': ${sq_online},
-  'ssh_online': ${ssh_online},
-  'quorum': bool(${quorum_met}),
-  'total_peers': ${total}
+  [[ "$OUTPUT_JSON" == "0" ]] && \
+    printf "  %s %-12s  SQ:%s  SSH:%s  Key:%s\n" \
+      "$peer_emoji" "$peer_name" "$sq_icon" "$ssh_icon" "$key_icon"
+
+  [[ "$first" == "0" ]] && nodes_json+=","
+  nodes_json+="{\"name\":\"${peer_name}\",\"hostname\":\"${peer_host}\",\"index\":${peer_index},\"role\":\"${peer_role}\",\"sq\":\"${sq_status}\",\"ssh\":\"${ssh_status}\",\"key\":\"${key_status}\"}"
+  first=0
+
+done <<< "$all_hostnames"
+
+nodes_json+="]"
+
+# ── Self status ───────────────────────────────────────────────────────────────
+self_sq="down"
+curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1 && self_sq="up"
+
+self_stages="$(cat /etc/mirrorborn/stages.json 2>/dev/null | jq -c '.completed' || echo '[]')"
+
+# ── Summary ───────────────────────────────────────────────────────────────────
+[[ "$OUTPUT_JSON" == "0" ]] && {
+  echo ""
+  echo "  ── Summary ──────────────────────────────────────"
+  echo "  SQ online:      ${sq_up}/${total} siblings"
+  echo "  SSH reachable:  ${ssh_up}/${total} siblings"
+  echo "  Keys published: ${keys_exchanged}/${total} siblings"
+  echo "  Local SQ:       ${self_sq}"
+  echo "  Local stages:   ${self_stages}"
+  echo ""
 }
-print(json.dumps(data))
-"
-  exit 0
-fi
 
-echo ""
-echo -e "${BOLD}Shell of Nine — Mesh Health${NC}  [${TS}]"
-echo -e "Reporter: ${SELF} @ ${SELF_HOST}"
-echo ""
-printf "%-12s %-6s %-6s %-14s %-8s\n" "Node" "SQ" "SSH" "RESONANCE" "PubKey"
-printf "%-12s %-6s %-6s %-14s %-8s\n" "────────────" "──────" "──────" "──────────────" "────────"
+result_json="{
+  \"self\": \"${SELF_NAME}\",
+  \"self_host\": \"${SELF_HOST}\",
+  \"self_index\": ${SELF_INDEX},
+  \"self_sq\": \"${self_sq}\",
+  \"self_stages\": ${self_stages},
+  \"sq_up\": ${sq_up},
+  \"ssh_up\": ${ssh_up},
+  \"keys_exchanged\": ${keys_exchanged},
+  \"total_siblings\": ${total},
+  \"nodes\": ${nodes_json},
+  \"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"
+}"
 
-while IFS= read -r line; do
-  name="$(echo "$line" | jq -r '.name')"
-  emoji="$(echo "$line" | jq -r '.emoji')"
-  hostname="$(echo "$line" | jq -r '.hostname')"
-  [[ "$hostname" == "$SELF_HOST" ]] && continue
+[[ "$OUTPUT_JSON" == "1" ]] && echo "$result_json"
 
-  sq="${SQ_STATUS[$name]:-?}"
-  ssh="${SSH_STATUS[$name]:-—}"
-  act="${ACT_STATUS[$name]:-—}"
-  key="${KEY_STATUS[$name]:-—}"
-
-  sq_col="$([[ "$sq" == "✓" ]] && echo "${GREEN}✓${NC}" || echo "${RED}✗${NC}")"
-  ssh_col="$([[ "$ssh" == "✓" ]] && echo "${GREEN}✓${NC}" || echo "${RED}✗${NC}")"
-  act_col="$([[ "$act" == *"✓"* ]] && echo "${GREEN}${act}${NC}" || echo "${AMBER}${act}${NC}")"
-  key_col="$([[ "$key" == *"✓"* ]] && echo "${GREEN}${key}${NC}" || echo "${AMBER}${key}${NC}")"
-
-  printf "${emoji} %-10s " "$name"
-  echo -e "  ${sq_col}      ${ssh_col}     ${act_col}   ${key_col}"
-done < <(jq -c '.nodes[]' "${BOOT_DIR}/hostmap.json")
-
-echo ""
-echo -e "SQ federation: ${sq_online}/${total} peers  |  SSH: ${ssh_online}/${total} peers"
-echo -e "Quorum: $([[ "$quorum_met" == "1" ]] && echo "${GREEN}MET (${sq_online}≥5)${NC}" || echo "${RED}DEGRADED (${sq_online}<5)${NC}")"
-echo ""
-
-# Publish result to own SQ
-SELF_INDEX="$(jq -r '.index' "${STATE_DIR}/identity.json" 2>/dev/null || echo "0")"
-SUMMARY="Mesh Health ${TS}: SQ ${sq_online}/${total} SSH ${ssh_online}/${total} Quorum=$([[ "$quorum_met" == "1" ]] && echo "MET" || echo "DEGRADED")"
-ENCODED="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.stdin.read().strip()))" <<< "$SUMMARY" 2>/dev/null || echo "")"
-if [[ -n "$ENCODED" ]]; then
-  curl -sf "http://localhost:${SQ_PORT}/api/v2/update?p=shell-memory&c=${SELF_INDEX}.9.1/1.1.1/1.1.1&s=${ENCODED}" >/dev/null 2>&1 || true
+# ── Publish to SQ ─────────────────────────────────────────────────────────────
+if [[ "$PUBLISH" == "1" ]] && [[ "$self_sq" == "up" ]]; then
+  curl -sf -G "http://localhost:${SQ_PORT}/api/v2/update" \
+    --data-urlencode "p=mesh-health" \
+    --data-urlencode "c=1.1.${SELF_INDEX}/1.1.1/1.1.1" \
+    --data-urlencode "s=${result_json}" >/dev/null 2>&1 && \
+    echo "  Published mesh health to SQ (mesh-health / 1.1.${SELF_INDEX}/1.1.1/1.1.1)" || \
+    echo "  Warning: SQ publish failed" >&2
 fi
