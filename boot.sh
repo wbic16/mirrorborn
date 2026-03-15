@@ -70,6 +70,9 @@ sudo chown $USER:$USER /etc/avahi/services/mirrorborn.service
 sudo touch /usr/local/bin/mirrorborn-heartbeat.sh
 sudo chown $USER:$USER /usr/local/bin/mirrorborn-heartbeat.sh
 
+# Opinionated default for Lincoln, NE
+sudo timedatectl set-timezone America/Chicago
+
 log() {
   local level="$1"; shift
   local msg="$*"
