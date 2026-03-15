@@ -302,7 +302,7 @@ run_phase_1() {
     log OK "SQ already running on port $SQ_PORT"
   else
     log WARN "Starting SQ daemon..."
-    nohup su - $REAL_USER -c "sq host $SQ_PORT" > /var/log/mirrorborn/sq.log 2>&1 &
+    nohup sudo -u $REAL_USER $(which sq || echo "/home/$REAL_USER/.cargo/bin/sq") host $SQ_PORT > /var/log/mirrorborn/sq.log 2>&1 &
     log OK "Testing SQ on port $SQ_PORT..."
     sleep 2
     if curl -sf "http://localhost:${SQ_PORT}/api/v2/status" >/dev/null 2>&1; then
