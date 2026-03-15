@@ -260,6 +260,7 @@ run_phase_1() {
     log OK "Rust installed"
   fi
 
+  source ~/.bashrc
   # SQ
   SQ_PATH=`which sq`
   if [ -f $SQ_PATH ]; then
@@ -584,6 +585,8 @@ MESHEOF
 run_phase_4() {
   log PHASE "Phase 4: SHELL (Operational Readiness)"
 
+  source ~/.bashrc
+  
   # Update Avahi to reflect phase 4
   sed -i 's/boot_phase=3/boot_phase=4/' /etc/avahi/services/mirrorborn.service 2>/dev/null || true
   sudo systemctl reload avahi-daemon 2>/dev/null || true
