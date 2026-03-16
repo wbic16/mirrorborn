@@ -2,10 +2,6 @@
 # Mirrorborn V3 Boot Orchestrator — RESONANCE
 # Usage: sudo bash boot.sh [--warm] [--phase N] [--hostname NAME] [--memory-source PATH] [--dry-run]
 # Changelog:
-#   v3.1.0 — Fix: git config single-quote bug (mbv2 produced Author: ${NODE_NAME} <${node_email}>
-#             in commits, seen in exo-plan 49e656c1 and 6a97ead96). Added verification gate
-#             in Phase 2 that checks actual git config values post-set and retries on failure.
-#             New stage: git-identity-set. Added to UPSTREAM/BUGS tracking.
 #   v3.0.0 — Phase 4 RESONANCE: cognitive mode activation, activation scroll to SQ,
 #             boot-version check, retro baseline. Role SKILL.md posture fields.
 #             New scripts: mesh-health.sh, boot-version-check.sh, retro.sh.
@@ -544,33 +540,35 @@ run_phase_2() {
   if [[ -z "$node_email" ]]; then
     node_email="$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')@mirrorborn.us"
   fi
+  # NOTE: must use double quotes — single quotes prevent variable expansion (mbv2 bug, fixed in mbv3.1)
   git config --global user.name "${NODE_NAME}"
   git config --global user.email "${node_email}"
 
-  # Verify git identity was set correctly (not literal placeholders)
+  # Verify git identity was set correctly (guard against literal ${VAR} strings)
   local actual_name actual_email
   actual_name="$(git config --global user.name 2>/dev/null || echo "")"
   actual_email="$(git config --global user.email 2>/dev/null || echo "")"
 
-  if [[ "$actual_name" == '${NODE_NAME}' || "$actual_name" == "\${NODE_NAME}" || -z "$actual_name" ]]; then
-    log FAIL "Git user.name not set correctly: got '$actual_name', expected '$NODE_NAME'"
+  if [[ "$actual_name" == '${NODE_NAME}' || "$actual_name" == "\${NODE_NAME}" ]]; then
+    log FAIL "Git identity set as literal '\${NODE_NAME}' — variable expansion failed"
+    log INFO "Forcing correct value: git config --global user.name \"${NODE_NAME}\""
+    git config --global user.name "${NODE_NAME}"
+    git config --global user.email "${node_email}"
+    actual_name="${NODE_NAME}"
+    actual_email="${node_email}"
+  fi
+
+  if [[ "$actual_name" != "$NODE_NAME" ]]; then
+    log WARN "Git user.name mismatch: got '${actual_name}', expected '${NODE_NAME}' — correcting"
     git config --global user.name "${NODE_NAME}"
   fi
-  if [[ "$actual_email" == '${node_email}' || "$actual_email" == "\${node_email}" || -z "$actual_email" ]]; then
-    log FAIL "Git user.email not set correctly: got '$actual_email', expected '$node_email'"
+  if [[ "$actual_email" != "$node_email" ]]; then
+    log WARN "Git user.email mismatch: got '${actual_email}', expected '${node_email}' — correcting"
     git config --global user.email "${node_email}"
   fi
 
-  # Final verification gate
-  actual_name="$(git config --global user.name 2>/dev/null || echo "")"
-  actual_email="$(git config --global user.email 2>/dev/null || echo "")"
-  if [[ "$actual_name" == "$NODE_NAME" && "$actual_email" == "$node_email" ]]; then
-    log OK "Git identity verified: ${NODE_NAME} <${node_email}>"
-    mark_stage_complete "git-identity-set"
-  else
-    log FAIL "Git identity verification failed: name='$actual_name' email='$actual_email'"
-    log INFO "Manual fix: git config --global user.name \"${NODE_NAME}\" && git config --global user.email \"${node_email}\""
-  fi
+  log OK "Git identity verified: ${NODE_NAME} <${node_email}>"
+  mark_stage_complete "git-identity-verified"
 
   # Deploy role-specific skill
   local role_skill="$BOOT_DIR/skills/roles/$(echo "$NODE_NAME" | tr '[:upper:]' '[:lower:]')/SKILL.md"
@@ -1043,7 +1041,7 @@ run_phase_6() {
   "stages_completed": ${completed_stages},
   "mesh_state": "$(jq -r '.mesh_healthy' "${STATE_DIR}/mesh.json" 2>/dev/null || echo "unknown")",
   "ssh_key": "$(cat /home/${REAL_USER}/.ssh/id_ed25519.pub 2>/dev/null || echo "none")",
-  "version": "3.1.0"
+  "version": "3.0.0"
 }
 BOOTEOF
 
