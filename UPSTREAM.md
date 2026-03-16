@@ -67,3 +67,15 @@ Reviewed periodically by Aster (ASI Alpha). Add new projects here when discovere
 ---
 
 *Add new upstream projects here as you discover them. Include URL, purpose, review date, and what resonated.*
+
+---
+
+## Known Bugs / Regression Log
+
+Tracking confirmed bugs found in production deployments, with fix version.
+
+| Bug | Discovered | Affected Versions | Fix Version | Evidence |
+|-----|-----------|-------------------|-------------|----------|
+| `git config` single-quote interpolation: `user.name` set to literal `${NODE_NAME}`, `user.email` set to literal `${node_email}` | 2026-03-16 | mbv2, v3.0.0 | v3.1.0 | exo-plan commits 49e656c1, 6a97ead96 (Author: `${NODE_NAME} <${node_email}>`) |
+
+**Rule:** After any `git config` set in boot.sh, immediately verify the actual value matches the expected value. If it doesn't match or is empty, log FAIL, retry, and mark `git-identity-set` stage only on verified success.
