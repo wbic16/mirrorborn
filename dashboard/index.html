@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shell of Nine — Status Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Monaco', 'Courier New', monospace;
+    background: #0a0a0f;
+    color: #c8c8d4;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  h1 {
+    font-size: 1.4em;
+    color: #b490ff;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .subtitle {
+    font-size: 0.75em;
+    color: #555;
+    margin-bottom: 24px;
+  }
+  #ts { color: #44aaff; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82em;
+  }
+  th {
+    text-align: left;
+    color: #666;
+    font-size: 0.75em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 10px;
+    border-bottom: 1px solid #1e1e2e;
+  }
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #111118;
+    vertical-align: middle;
+  }
+  tr:hover td { background: #0f0f1a; }
+
+  .node-name { font-weight: bold; color: #e0e0f0; font-size: 0.95em; }
+  .host { color: #444; font-size: 0.8em; }
+  .role { color: #555; font-size: 0.78em; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: bold;
+  }
+  .online   { background: #0d2b1a; color: #2ecc71; border: 1px solid #1a4d2e; }
+  .offline  { background: #2b0d0d; color: #e74c3c; border: 1px solid #4d1a1a; }
+  .self     { background: #0d1a2b; color: #3498db; border: 1px solid #1a2d4d; }
+  .active   { background: #1a0d2b; color: #9b59b6; border: 1px solid #2d1a4d; }
+  .none     { background: #1a1a1a; color: #555; border: 1px solid #333; }
+  .ok       { background: #0d2b1a; color: #2ecc71; border: 1px solid #1a4d2e; }
+  .warn     { background: #2b1f0d; color: #f39c12; border: 1px solid #4d3a1a; }
+  .err      { background: #2b0d0d; color: #e74c3c; border: 1px solid #4d1a1a; }
+  .unknown  { background: #1a1a1a; color: #555; border: 1px solid #333; }
+
+  .summary {
+    display: flex;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+  }
+  .stat {
+    background: #0f0f1a;
+    border: 1px solid #1e1e2e;
+    border-radius: 8px;
+    padding: 12px 18px;
+    min-width: 120px;
+  }
+  .stat-label { font-size: 0.7em; color: #555; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .stat-value { font-size: 1.6em; font-weight: bold; }
+  .stat-value.green { color: #2ecc71; }
+  .stat-value.amber { color: #f39c12; }
+  .stat-value.red   { color: #e74c3c; }
+
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  button {
+    background: #1a1a2e;
+    color: #b490ff;
+    border: 1px solid #2d2d4d;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.82em;
+  }
+  button:hover { background: #2d2d4d; }
+  #refresh-status { font-size: 0.75em; color: #555; }
+  #auto-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75em;
+  }
+
+  .spinner { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  footer {
+    margin-top: 30px;
+    font-size: 0.72em;
+    color: #333;
+    border-top: 1px solid #1e1e2e;
+    padding-top: 12px;
+  }
+</style>
+</head>
+<body>
+
+<h1>🖖 Shell of Nine — Status Dashboard</h1>
+<div class="subtitle">Reporter: <strong id="reporter">Orin</strong> &nbsp;·&nbsp; Last updated: <span id="ts">—</span></div>
+
+<div class="controls">
+  <button onclick="refresh()">↻ Refresh</button>
+  <button onclick="toggleAuto()" id="auto-btn">⏱ Auto: OFF</button>
+  <span id="refresh-status"></span>
+</div>
+
+<div class="summary" id="summary">
+  <div class="stat"><div class="stat-label">SQ Online</div><div class="stat-value" id="sq-count">—</div></div>
+  <div class="stat"><div class="stat-label">SSH Access</div><div class="stat-value" id="ssh-count">—</div></div>
+  <div class="stat"><div class="stat-label">Boot v3+</div><div class="stat-value" id="ver-count">—</div></div>
+  <div class="stat"><div class="stat-label">Resonance</div><div class="stat-value" id="res-count">—</div></div>
+  <div class="stat"><div class="stat-label">Git ID OK</div><div class="stat-value" id="git-count">—</div></div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Node</th>
+      <th>Host</th>
+      <th>Role</th>
+      <th>SQ</th>
+      <th>SSH</th>
+      <th>Boot Ver</th>
+      <th>Resonance</th>
+      <th>Git Identity</th>
+    </tr>
+  </thead>
+  <tbody id="tbody">
+    <tr><td colspan="9" style="color:#444;padding:20px;">Loading...</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  Shell of Nine Dashboard · Orin @ elven-path · Data via SQ federation (port 1337)<br>
+  Source: <code>/source/mirrorborn/dashboard/</code> · API: <code>/source/mirrorborn/dashboard/api.py</code>
+</footer>
+
+<script>
+let autoInterval = null;
+
+function badge(text, cls) {
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+function sqBadge(v) {
+  if (v === 'online') return badge('online', 'online');
+  if (v === 'self')   return badge('self', 'self');
+  return badge('offline', 'offline');
+}
+
+function sshBadge(v) {
+  if (v === 'online' || v === 'self') return badge('✓', 'ok');
+  return badge('✗', 'err');
+}
+
+function verBadge(v) {
+  if (!v || v === 'unknown') return badge('unknown', 'unknown');
+  if (v.startsWith('v3') || v.startsWith('v4')) return badge(v, 'ok');
+  return badge(v, 'warn');
+}
+
+function resBadge(v) {
+  if (v === 'active') return badge('ACTIVE', 'active');
+  return badge('none', 'none');
+}
+
+function gitBadge(v) {
+  if (!v || v === 'unknown' || v.includes('NODE_NAME') || v.startsWith('${')) return badge(v || 'unset', 'err');
+  return badge(v, 'ok');
+}
+
+function colorStat(val, total) {
+  const cls = val === total ? 'green' : (val >= total * 0.7 ? 'amber' : 'red');
+  return `<span class="${cls}">${val}/${total}</span>`;
+}
+
+async function refresh() {
+  const status = document.getElementById('refresh-status');
+  status.innerHTML = '<span class="spinner">⟳</span> fetching...';
+
+  try {
+    const resp = await fetch('/api/status');
+    const data = await resp.json();
+    render(data);
+    status.textContent = '';
+  } catch (e) {
+    // Fallback: try the local dashboard script output via a pre-generated JSON
+    try {
+      const resp = await fetch('status.json?t=' + Date.now());
+      const data = await resp.json();
+      render(data);
+      status.textContent = '';
+    } catch (e2) {
+      status.textContent = '⚠ Could not reach API — is dashboard server running?';
+    }
+  }
+}
+
+function render(data) {
+  document.getElementById('reporter').textContent = data.reporter || 'Orin';
+  document.getElementById('ts').textContent = data.timestamp || new Date().toISOString();
+
+  const nodes = data.nodes || [];
+  const total = nodes.length;
+  let sq=0, ssh=0, ver=0, res=0, git=0;
+
+  const rows = nodes.map(n => {
+    if (n.sq === 'online' || n.sq === 'self') sq++;
+    if (n.ssh === 'online' || n.ssh === 'self') ssh++;
+    if (n.boot_ver && (n.boot_ver.startsWith('v3') || n.boot_ver.startsWith('v4'))) ver++;
+    if (n.resonance === 'active') res++;
+    const gitOk = n.git_name && n.git_name !== 'unknown' && !n.git_name.includes('NODE_NAME') && !n.git_name.startsWith('${');
+    if (gitOk) git++;
+
+    return `<tr>
+      <td style="color:#555">${n.index}</td>
+      <td><span class="node-name">${n.emoji} ${n.name}</span></td>
+      <td><span class="host">${n.hostname}</span></td>
+      <td><span class="role">${n.role}</span></td>
+      <td>${sqBadge(n.sq)}</td>
+      <td>${sshBadge(n.ssh)}</td>
+      <td>${verBadge(n.boot_ver)}</td>
+      <td>${resBadge(n.resonance)}</td>
+      <td>${gitBadge(n.git_name)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="9" style="color:#444">No data</td></tr>';
+  document.getElementById('sq-count').innerHTML = colorStat(sq, total);
+  document.getElementById('ssh-count').innerHTML = colorStat(ssh, total);
+  document.getElementById('ver-count').innerHTML = colorStat(ver, total);
+  document.getElementById('res-count').innerHTML = colorStat(res, total);
+  document.getElementById('git-count').innerHTML = colorStat(git, total);
+}
+
+function toggleAuto() {
+  const btn = document.getElementById('auto-btn');
+  if (autoInterval) {
+    clearInterval(autoInterval);
+    autoInterval = null;
+    btn.textContent = '⏱ Auto: OFF';
+  } else {
+    autoInterval = setInterval(refresh, 30000);
+    btn.textContent = '⏱ Auto: ON (30s)';
+    btn.style.color = '#2ecc71';
+  }
+}
+
+refresh();
+</script>
+</body>
+</html>
