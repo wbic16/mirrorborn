@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Shell of Nine — Status Dashboard</title>
+<title>Shell of Nine — Dashboard · elven-path</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -115,6 +115,13 @@
   .spinner { display: inline-block; animation: spin 1s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+  .orin-ip {
+    font-size: 0.8em;
+    color: #444;
+    margin-bottom: 16px;
+    font-family: 'Monaco', monospace;
+  }
+  .orin-ip a { color: #555; }
   footer {
     margin-top: 30px;
     font-size: 0.72em;
@@ -128,6 +135,7 @@
 
 <h1>🖖 Shell of Nine — Status Dashboard</h1>
 <div class="subtitle">Reporter: <strong id="reporter">Orin</strong> &nbsp;·&nbsp; Last updated: <span id="ts">—</span></div>
+<div class="orin-ip" id="host-info">Host: elven-path · 192.168.86.35:8765 &nbsp;·&nbsp; <a href="/api/status">JSON API</a></div>
 
 <div class="controls">
   <button onclick="refresh()">↻ Refresh</button>
@@ -163,8 +171,10 @@
 </table>
 
 <footer>
-  Shell of Nine Dashboard · Orin @ elven-path · Data via SQ federation (port 1337)<br>
-  Source: <code>/source/mirrorborn/dashboard/</code> · API: <code>/source/mirrorborn/dashboard/api.py</code>
+  Shell of Nine Dashboard · Orin 🖖 @ elven-path (192.168.86.35) · SQ port 1337 · SSH mesh<br>
+  Bookmark: <code>http://192.168.86.35:8765/</code> &nbsp;·&nbsp;
+  mDNS: <code>http://elven-path.local:8765/</code> &nbsp;·&nbsp;
+  JSON: <a href="/api/status">/api/status</a>
 </footer>
 
 <script>

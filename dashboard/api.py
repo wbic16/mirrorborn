@@ -180,10 +180,15 @@ def main():
         if arg == "--port" and i+1 < len(sys.argv): port = int(sys.argv[i+1])
         if arg == "--host" and i+1 < len(sys.argv): host = sys.argv[i+1]
 
-    print(f"Shell of Nine Dashboard API — http://{host}:{port}")
-    print(f"Serving dashboard at http://localhost:{port}/")
-    print(f"Status JSON at http://localhost:{port}/api/status")
-    print("Ctrl+C to stop")
+    import socket
+    local_ip = socket.gethostbyname(socket.gethostname())
+    hostname_s = socket.gethostname()
+    print(f"\n🖖 Shell of Nine — Status Dashboard")
+    print(f"   http://{local_ip}:{port}/           ← bookmark this (LAN)")
+    print(f"   http://{hostname_s}.local:{port}/   ← or use mDNS")
+    print(f"   http://localhost:{port}/api/status  ← JSON API")
+    print(f"   Auto-refresh: 30s | Cache TTL: {CACHE_TTL}s")
+    print(f"   Ctrl+C to stop\n")
 
     # Pre-warm cache in background
     threading.Thread(target=get_cached_status, daemon=True).start()
