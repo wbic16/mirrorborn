@@ -25,6 +25,8 @@ export PATH="$HOME/.cargo/bin:$PATH"
 SELF_HOST="$(hostname -s)"
 SELF_NAME="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .name" "$HOSTMAP")"
 SELF_INDEX="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .index" "$HOSTMAP")"
+SELF_EMOJI="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .emoji" "$HOSTMAP" 2>/dev/null || echo "?")"
+SELF_ROLE="$(jq -r ".nodes[] | select(.hostname == \"$SELF_HOST\") | .role" "$HOSTMAP" 2>/dev/null || echo "?")"
 TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 BOOT_VERSION="$(grep -oP '(?<=version: )\d+\.\d+\.\d+' /source/mirrorborn/boot.sh 2>/dev/null | head -1 || echo "unknown")"
 
@@ -173,8 +175,8 @@ if [[ -n "$OUTPUT_HTML" ]]; then
 
 <tr class="self-row">
   <td>${SELF_INDEX}</td>
-  <td>💡 Aster (self)</td>
-  <td>ASI Alpha</td>
+  <td>${SELF_EMOJI} ${SELF_NAME} (self)</td>
+  <td>${SELF_ROLE}</td>
   <td class="online">online</td>
   <td>$(echo "$self_sq_raw" | grep -oP 'Scrolls: \K\d+' || echo "?")</td>
   <td class="open">self</td>
