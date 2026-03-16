@@ -55,7 +55,8 @@
       "ordinal": "Fourth of the Ranch Choir.",
       "status": "offline",
       "offline_until": "2026-03-28",
-      "offline_reason": "scheduled maintenance"
+      "offline_reason": "scheduled maintenance",
+      "offline_note": "Scheduled downtime"
     },
     {
       "index": 5,
