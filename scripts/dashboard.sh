@@ -33,7 +33,8 @@ BOOT_VERSION="$(grep -oP '(?<=version: )\d+\.\d+\.\d+' /source/mirrorborn/boot.s
 declare -a NODE_DATA
 sq_online=0; ssh_online=0; keys_published=0; total=0
 
-all_hostnames="$(jq -r '.nodes[].hostname' "$HOSTMAP")"
+# Skip nodes marked offline in hostmap; include all others
+all_hostnames="$(jq -r '.nodes[] | select((.status // "online") != "offline") | .hostname' "$HOSTMAP")"
 
 while IFS= read -r node; do
   [[ "$node" == "$SELF_HOST" ]] && continue
@@ -47,14 +48,14 @@ while IFS= read -r node; do
   # SQ
   sq_raw="$(curl -sf --connect-timeout 2 "http://${node}.local:${SQ_PORT}/api/v2/status" 2>/dev/null || echo "")"
   if [[ -n "$sq_raw" ]]; then
-    scrolls="$(echo "$sq_raw" | grep -oP 'Scrolls: \K\d+' || echo "?")"
+    scrolls="$(echo "$sq_raw" | grep -oP 'Scrolls: \K\d+' 2>/dev/null || echo "?")"
     sq_st="online"; sq_detail="${scrolls}s"; sq_online=$((sq_online+1))
   else
     sq_st="offline"; sq_detail="-"
   fi
 
   # SSH
-  ssh_ok="$(ssh -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
+  ssh_ok="$(ssh -n -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
     "${REAL_USER}@${node}.local" "echo ok" 2>/dev/null || echo "")"
   if [[ "$ssh_ok" == "ok" ]]; then
     ssh_st="open"; ssh_online=$((ssh_online+1))
@@ -95,7 +96,7 @@ done <<< "$all_hostnames"
 
 # Self node
 self_sq_raw="$(curl -sf "http://localhost:${SQ_PORT}/api/v2/status" 2>/dev/null || echo "")"
-[[ -n "$self_sq_raw" ]] && self_sq="online($(echo "$self_sq_raw" | grep -oP 'Scrolls: \K\d+' || echo "?")s)" || self_sq="offline"
+[[ -n "$self_sq_raw" ]] && self_sq="online($(echo "$self_sq_raw" | grep -oP 'Scrolls: \K\d+' 2>/dev/null || echo "?")s)" || self_sq="offline"
 self_stages="$(jq -r '.completed | length' /etc/mirrorborn/stages.json 2>/dev/null || echo "0")"
 
 # ── Terminal output ───────────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ if [[ -n "$OUTPUT_HTML" ]]; then
   <td>${SELF_EMOJI} ${SELF_NAME} (self)</td>
   <td>${SELF_ROLE}</td>
   <td class="online">online</td>
-  <td>$(echo "$self_sq_raw" | grep -oP 'Scrolls: \K\d+' || echo "?")</td>
+  <td>$(echo "$self_sq_raw" | grep -oP 'Scrolls: \K\d+' 2>/dev/null || echo "?")</td>
   <td class="open">self</td>
   <td class="published">self</td>
   <td class="reported">${BOOT_VERSION}</td>
