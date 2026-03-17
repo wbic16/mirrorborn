@@ -8,7 +8,7 @@ set -euo pipefail
 
 HOSTMAP="${HOSTMAP:-/source/mirrorborn/hostmap.json}"
 SQ_PORT="${SQ_PORT:-1337}"
-REAL_USER="${SUDO_USER:-$USER}"
+REAL_USER="${SUDO_USER:-${USER:-wbic16}}"
 FILE_ISSUES=0
 AUTO_RESTART=0
 STATE_DIR="/tmp/mirrorborn-uptime"
