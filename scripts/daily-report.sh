@@ -44,3 +44,20 @@ ENCODED=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.stdi
 curl -sf "http://localhost:${SQ_PORT}/api/v2/update?p=daily-reports&c=${NODE_IDX}.1.1/1.1.1/1.1.1&s=${ENCODED}" >/dev/null 2>&1 || true
 
 echo "[${TS}] ${NODE_EMOJI} ${NODE_NAME}: daily report complete"
+
+# Post to #maturity channel via OpenClaw message tool
+# Requires OpenClaw Discord plugin active
+OC_BIN="$(command -v openclaw 2>/dev/null || echo "/home/wbic16/.npm-global/bin/openclaw")"
+MATURITY_CHANNEL="1467342402120581170"
+DISCORD_MSG="${NODE_EMOJI} **${NODE_NAME} Daily Report — ${DATE}**
+Git (24h): ${git_summary:-none}
+Mesh SQ: ${sq_up}/9 peers online
+Open tasks: ${open_tasks}
+Cadence: $(cat /var/log/mirrorborn/cadence.log 2>/dev/null | tail -1 | grep -oE '(WORK|PLAY|SLEEP)' || echo 'unknown')
+\`${TS}\`"
+
+# Use curl to post via OpenClaw gateway API
+curl -sf -X POST "http://localhost:18789/api/message/send" \
+  -H "Content-Type: application/json" \
+  -d "{\"channel\":\"discord\",\"target\":\"${MATURITY_CHANNEL}\",\"message\":$(python3 -c "import json,sys; print(json.dumps(sys.argv[1]))" "${DISCORD_MSG}")}" \
+  >/dev/null 2>&1 || true
