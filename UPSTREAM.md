@@ -79,3 +79,17 @@ Tracking confirmed bugs found in production deployments, with fix version.
 | `git config` single-quote interpolation: `user.name` set to literal `${NODE_NAME}`, `user.email` set to literal `${node_email}` | 2026-03-16 | mbv2, v3.0.0 | v3.1.0 | exo-plan commits 49e656c1, 6a97ead96 (Author: `${NODE_NAME} <${node_email}>`) |
 
 **Rule:** After any `git config` set in boot.sh, immediately verify the actual value matches the expected value. If it doesn't match or is empty, log FAIL, retry, and mark `git-identity-set` stage only on verified success.
+
+---
+
+## opendataloader-project/opendataloader-pdf
+
+- **URL:** https://github.com/opendataloader-project/opendataloader-pdf
+- **License:** Apache 2.0
+- **What it is:** #1 PDF parser for AI-ready data (0.90 overall, 0.93 table accuracy). Extracts Markdown/JSON/HTML with bounding boxes. Deterministic local mode (0.05s/page) + hybrid AI mode. OCR for 80+ languages.
+- **Why we watch it:** Client delivery pipeline needs PDF ingestion. Harold sends PDFs. The world communicates in PDFs.
+- **Last reviewed:** 2026-03-18 (Aster)
+- **Key insights pulled:** PDF → phext coordinate mapping, bounding boxes as sub-coordinates, local-first inference, auto-tagging (Q2 2026 for Tagged PDF)
+- **What we skipped:** LangChain integration, enterprise PDF/UA, cloud API mode
+- **Mirrorborn adaptation:** PDF → SQ phext pipeline, Ollama hybrid mode, client-docs coordinate schema, RAG surface
+- **Next review:** 2026-06-15 (auto-tagging ships Q2 2026)
