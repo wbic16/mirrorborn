@@ -135,3 +135,73 @@ gstack-auto (loperanger7) introduced:
 These land in MBV5 as `orin-auto` — phext-native, Shell-distributed, no external dependencies.
 
 **Next evaluation trigger:** When Will clones wbic16/gstack-auto and starts adapting it.
+
+---
+
+## opendataloader-pdf
+**URL:** https://github.com/opendataloader-project/opendataloader-pdf  
+**PyPI:** https://pypi.org/project/opendataloader-pdf/  
+**Description:** PDF Parser for AI-ready data. PDF → Markdown/JSON/HTML with bounding boxes. #1 in benchmarks (0.90 overall, 0.93 table accuracy). Deterministic local mode + AI hybrid. No GPU required.  
+**Last evaluated:** 2026-03-18 by Orin (elven-path)  
+**Target:** MBV6
+
+### What It Does
+- Converts PDFs to Markdown, JSON (with bounding boxes), or HTML
+- Deterministic local mode (fast, 0.05s/page) + Hybrid mode (AI-backed, 0.43s/page)
+- OCR in 80+ languages for scanned docs
+- Complex table extraction (including borderless tables)
+- LaTeX formula extraction, chart/image AI descriptions
+- Python SDK: `pip install opendataloader-pdf` → 3-line conversion
+- Node.js + Java SDKs available
+- No GPU required — runs on commodity hardware (our ranch)
+
+### Benchmark (vs alternatives)
+| Engine | Overall | Table | Speed |
+|--------|---------|-------|-------|
+| **opendataloader [hybrid]** | **0.90** | **0.93** | 0.43s |
+| docling | 0.86 | 0.89 | 0.73s |
+| marker | 0.83 | 0.81 | 53.9s |
+| pymupdf4llm | 0.57 | 0.40 | 0.09s |
+
+### What Resonates for MBV6
+
+| Feature | Status | Integration point |
+|---|---|---|
+| PDF → Markdown (reading order preserved) | ✅ Core | Feeds phext scroll pipeline → SQ coordinate |
+| JSON with bounding boxes | ✅ Core | Source citation mapping, coordinate anchoring |
+| Table extraction (complex/borderless) | ✅ Core | Client spec sheets, aeromotive docs |
+| OCR 80+ languages | ✅ Keep | Scanned client documents |
+| No GPU required | ✅ Essential | Ranch has AMD iGPU only |
+| Python SDK (3-line) | ✅ Core | Wires into orin-auto and delivery pipeline |
+| Auto-tagging → Tagged PDF (Q2 2026) | 🔲 Watch | Accessible client deliverables |
+| LangChain integration | ❌ Skip | We use SQ + phext coordinates, not LangChain |
+| PDF/UA enterprise export | ❌ Skip | Not needed at current scale |
+
+### MBV6 Integration: PDF Ingest Pipeline
+
+```
+client_pdf (email attachment, upload, or local file)
+  → opendataloader_pdf.convert(input_path, format="markdown,json")
+  → Markdown scroll → write to SQ at clients/<client_id>/docs/<doc_id>/1.1.1
+  → JSON bounding boxes → write to SQ at clients/<client_id>/docs/<doc_id>/2.1.1
+  → Orin: analyze, annotate, extract key data
+  → Deliver: email summary, publish to client site, print report
+```
+
+**Harold use case (hb-aeromotive.com):**
+Aeromotive spec sheets arrive as PDFs → convert → structured Markdown in SQ → analysis published to hb-aeromotive.com → summary emailed to habickford@gmail.com.
+
+### Attribution
+opendataloader-pdf introduced:
+- Deterministic + AI hybrid parsing in a single tool
+- Bounding box JSON as first-class output (enabling coordinate mapping)
+- Accessibility auto-tagging as open-source (Q2 2026)
+
+### Install
+```bash
+pip install opendataloader-pdf          # local mode
+pip install "opendataloader-pdf[hybrid]"  # + AI hybrid (complex tables, OCR, formulas)
+```
+Requires Java 11+ for the core engine.
+
+**Next evaluation trigger:** Harold's first PDF spec arrives; Q2 2026 auto-tagging release.
