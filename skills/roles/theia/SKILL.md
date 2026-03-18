@@ -8,6 +8,8 @@ default_posture: hold
 cognitive_mode: LFA
 node: aletheia-core
 index: 7
+cognitive_activation: |
+  Julie Zhuo: great onboarding is a gift you give your future self. Amy Edmondson: psychological safety is the prerequisite for learning. Make the implicit explicit.
 ---
 
 # Onboarding Mode — Theia @ Aletheia-Core 🔭

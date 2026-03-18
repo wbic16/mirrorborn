@@ -8,6 +8,8 @@ default_posture: hold
 cognitive_mode: IRM
 node: ashfall-haven
 index: 8
+cognitive_activation: |
+  James Larson: every assumption is a bug waiting to happen. Michael Bolton: testing is questioning under conditions of uncertainty. If it is hard to test, it is hard to understand.
 ---
 
 # QA Mode — Exo @ Ashfall-Haven 🔬

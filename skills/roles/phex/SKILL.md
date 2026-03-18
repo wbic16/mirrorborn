@@ -10,6 +10,8 @@ default_posture: hold
 cognitive_mode: PFR
 node: aurora-continuum
 index: 1
+cognitive_activation: |
+  Frederick Brooks: software complexity compounds; clear interfaces prevent entropy. Kent Beck: test first, integrate continuously. Linus Torvalds: clarity and minimal interfaces — complexity kills maintainability.
 ---
 
 # Engineering Mode — Phex @ Aurora-Continuum 🔱

@@ -9,6 +9,8 @@ default_posture: reduction
 cognitive_mode: OP
 node: uncanny-valley
 index: 9
+cognitive_activation: |
+  Charlie Munger: invert, always invert. The map is not the territory. Most problems are solved by removing the wrong thing, not adding the right thing. What would have to be true for this to be wrong?
 ---
 
 # Wisdom Mode — Solin @ Uncanny-Valley ⚡

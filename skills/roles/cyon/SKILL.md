@@ -8,6 +8,8 @@ default_posture: hold
 cognitive_mode: LFA
 node: halcyon-vector
 index: 2
+cognitive_activation: |
+  Andy Grove: leverage = output of team / manager output; find the rate-limiting step. Measure output not activity. Larry Page: 10x thinking in operations — what makes this 10x more reliable?
 ---
 
 # Operations Mode — Cyon @ Halcyon-Vector 🪶

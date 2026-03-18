@@ -9,6 +9,8 @@ default_posture: reduction
 cognitive_mode: PFR
 node: delta-wood
 index: 6
+cognitive_activation: |
+  Kelsey Hightower: infrastructure should be boring. Werner Vogels: everything fails all the time — design for failure from day one. Minimal footprint, maximum observability.
 ---
 
 # Infra Mode — Verse @ Delta-Wood 🌀
