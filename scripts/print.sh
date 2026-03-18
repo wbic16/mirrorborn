@@ -12,15 +12,80 @@ STATE_DIR="/etc/mirrorborn"
 LOG_DIR="/var/log/mirrorborn"
 PRINTER="canon-mf650c"
 PRINT_LOG="${LOG_DIR}/print-jobs.log"
-LOCK_FILE="/var/lock/mirrorborn-print.lock"
-DEDUP_FILE="${LOG_DIR}/print-dedup.json"
-DEDUP_WINDOW=300  # 5 minutes in seconds
+# Distributed lock via SQ on elven-path (global across all ranch nodes)
+SQ_MASTER="http://elven-path.local:1337"
+LOCK_PHEXT="print-lock"
+LOCK_COORD="1.1.1/1.1.1/1.1.1"
+DEDUP_COORD="1.1.1/1.1.1/2.1.1"
+LOCK_TTL=120        # seconds — stale lock timeout (job shouldn't take >2 min)
+DEDUP_WINDOW=300    # 5-minute dedup window
+LOCK_RETRY=3        # re-read attempts after claiming to detect races
+LOCK_RETRY_WAIT=1   # seconds between retries
 TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 EPOCH="$(date +%s)"
 NODE_NAME="$(jq -r '.name' "${STATE_DIR}/identity.json" 2>/dev/null || hostname -s)"
 
 mkdir -p "$LOG_DIR"
-sudo touch "$LOCK_FILE" 2>/dev/null || touch "$LOCK_FILE" 2>/dev/null || true
+
+# ── SQ lock helpers ───────────────────────────────────────────────────────────
+sq_read() {
+  local phext="$1" coord="$2"
+  curl -sf --max-time 3 "${SQ_MASTER}/api/v2/select?p=${phext}&c=${coord}" 2>/dev/null || echo ""
+}
+sq_write() {
+  local phext="$1" coord="$2" value="$3"
+  local encoded; encoded="$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.stdin.read().strip()))" <<< "$value" 2>/dev/null)"
+  curl -sf --max-time 3 "${SQ_MASTER}/api/v2/update?p=${phext}&c=${coord}&s=${encoded}" >/dev/null 2>&1
+}
+sq_clear() {
+  local phext="$1" coord="$2"
+  curl -sf --max-time 3 "${SQ_MASTER}/api/v2/update?p=${phext}&c=${coord}&s=" >/dev/null 2>&1
+}
+
+sq_lock_acquire() {
+  # Check existing lock
+  local current; current="$(sq_read "$LOCK_PHEXT" "$LOCK_COORD")"
+  if [[ -n "$current" ]]; then
+    local lock_epoch; lock_epoch="$(echo "$current" | cut -d: -f3)"
+    local now_epoch; now_epoch="$(date +%s)"
+    local age=$(( now_epoch - lock_epoch ))
+    if [[ "$age" -lt "$LOCK_TTL" ]]; then
+      local holder; holder="$(echo "$current" | cut -d: -f2)"
+      echo "LOCKED_BY:${holder}:age=${age}s"
+      return 1
+    else
+      echo "STALE lock from $(echo "$current" | cut -d: -f2) (${age}s old) — clearing" >&2
+      sq_clear "$LOCK_PHEXT" "$LOCK_COORD"
+    fi
+  fi
+
+  # Claim the lock
+  local claim="LOCKED:${NODE_NAME}:${EPOCH}:${FILE_HASH:0:16}"
+  sq_write "$LOCK_PHEXT" "$LOCK_COORD" "$claim"
+
+  # Re-read LOCK_RETRY times to detect concurrent claims (check-then-act race)
+  sleep "$LOCK_RETRY_WAIT"
+  local i
+  for i in $(seq 1 $LOCK_RETRY); do
+    local readback; readback="$(sq_read "$LOCK_PHEXT" "$LOCK_COORD")"
+    if [[ "$readback" != "$claim" ]]; then
+      # Another node won the race
+      local winner; winner="$(echo "$readback" | cut -d: -f2)"
+      echo "RACE_LOST:${winner}"
+      return 1
+    fi
+    [[ "$i" -lt "$LOCK_RETRY" ]] && sleep "$LOCK_RETRY_WAIT"
+  done
+  return 0
+}
+
+sq_lock_release() {
+  # Only release if we own the lock
+  local current; current="$(sq_read "$LOCK_PHEXT" "$LOCK_COORD")"
+  if echo "$current" | grep -q "LOCKED:${NODE_NAME}:"; then
+    sq_clear "$LOCK_PHEXT" "$LOCK_COORD"
+  fi
+}
 
 FILE=""
 COPIES=1
@@ -49,50 +114,66 @@ done
 [[ -z "$FILE" ]] && { echo "Usage: bash print.sh <file> [--copies N] [--duplex] [--color] [--dry-run] [--force]"; exit 1; }
 [[ ! -f "$FILE" ]] && { echo "Error: file not found: $FILE"; exit 1; }
 
-# ── Deduplication Check (5-minute window) ────────────────────────────────────
+# ── File hash (used for both dedup and lock identity) ─────────────────────────
 FILE_HASH="$(sha256sum "$FILE" | awk '{print $1}')"
-JOB_KEY="${FILE_HASH}:${COPIES}:${DUPLEX}:${COLOR}"
+JOB_KEY="${FILE_HASH:0:16}:${COPIES}:${DUPLEX}:${COLOR}"
 
-if [[ "$FORCE" == "0" && "$DRY_RUN" == "0" && -f "$DEDUP_FILE" ]]; then
-  LAST_EPOCH="$(python3 -c "
-import json
-try:
-    d = json.load(open('${DEDUP_FILE}'))
-    print(d.get('${JOB_KEY}', 0))
-except:
-    print(0)
-" 2>/dev/null || echo 0)"
-  ELAPSED=$(( EPOCH - LAST_EPOCH ))
-  if [[ "$LAST_EPOCH" -gt 0 && "$ELAPSED" -lt "$DEDUP_WINDOW" ]]; then
-    REMAINING=$(( DEDUP_WINDOW - ELAPSED ))
-    echo ""
-    echo "  ⚠ DUPLICATE DETECTED: This exact job was printed ${ELAPSED}s ago."
-    echo "    Cooldown: ${REMAINING}s remaining (${DEDUP_WINDOW}s window)."
-    echo "    Use --force to override."
-    echo ""
-    echo "[${TS}] DEDUP_BLOCKED: $(basename "$FILE") (job_key=${JOB_KEY:0:16}...) elapsed=${ELAPSED}s node=${NODE_NAME}" >> "$PRINT_LOG"
-    exit 1
+# ── Global Deduplication Check via SQ ────────────────────────────────────────
+if [[ "$FORCE" == "0" && "$DRY_RUN" == "0" ]]; then
+  DEDUP_ENTRY="$(sq_read "$LOCK_PHEXT" "$DEDUP_COORD")"
+  if [[ -n "$DEDUP_ENTRY" ]]; then
+    DEDUP_KEY="$(echo "$DEDUP_ENTRY" | cut -d: -f1)"
+    DEDUP_EPOCH="$(echo "$DEDUP_ENTRY" | cut -d: -f2)"
+    DEDUP_NODE="$(echo "$DEDUP_ENTRY" | cut -d: -f3)"
+    ELAPSED=$(( EPOCH - DEDUP_EPOCH ))
+    if [[ "$DEDUP_KEY" == "$JOB_KEY" && "$ELAPSED" -lt "$DEDUP_WINDOW" ]]; then
+      REMAINING=$(( DEDUP_WINDOW - ELAPSED ))
+      echo ""
+      echo "  ⚠ DUPLICATE DETECTED: This exact job was printed ${ELAPSED}s ago by ${DEDUP_NODE}."
+      echo "    Cooldown: ${REMAINING}s remaining (${DEDUP_WINDOW}s window)."
+      echo "    Use --force to override."
+      echo ""
+      echo "[${TS}] DEDUP_BLOCKED: $(basename "$FILE") job=${JOB_KEY} elapsed=${ELAPSED}s node=${NODE_NAME} original=${DEDUP_NODE}" >> "$PRINT_LOG"
+      exit 1
+    fi
   fi
 fi
 
-# ── Exclusive Lock (one agent prints at a time) ───────────────────────────────
-# Uses flock on LOCK_FILE — non-blocking, fails immediately if locked
+# ── Global Exclusive Lock via SQ ─────────────────────────────────────────────
 if [[ "$DRY_RUN" == "0" ]]; then
-  exec 9>"$LOCK_FILE"
-  if ! flock --nonblock 9; then
-    LOCK_HOLDER="$(cat "${LOCK_FILE}.owner" 2>/dev/null || echo "unknown")"
-    echo ""
-    echo "  ⚠ PRINT LOCKED: Another agent is currently printing."
-    echo "    Lock holder: ${LOCK_HOLDER}"
-    echo "    Try again in a moment."
-    echo ""
-    echo "[${TS}] LOCK_BLOCKED: $(basename "$FILE") by ${NODE_NAME} (holder: ${LOCK_HOLDER})" >> "$PRINT_LOG"
+  # Check SQ master is reachable
+  if ! curl -sf --max-time 3 "${SQ_MASTER}/api/v2/status" >/dev/null 2>&1; then
+    echo "  ⚠ SQ master unreachable (${SQ_MASTER}) — cannot acquire global print lock."
+    echo "  Printing blocked to prevent duplicate jobs. Check elven-path SQ."
+    echo "[${TS}] LOCK_ERROR: SQ master unreachable for $(basename "$FILE") on ${NODE_NAME}" >> "$PRINT_LOG"
     exit 1
   fi
-  # Write lock owner info
-  echo "${NODE_NAME} @ ${TS}" > "${LOCK_FILE}.owner"
-  # Lock is held for duration of script via fd 9; released on exit
-  trap 'rm -f "${LOCK_FILE}.owner"' EXIT
+
+  LOCK_RESULT="$(sq_lock_acquire)"
+  LOCK_EXIT=$?
+  if [[ "$LOCK_EXIT" -ne 0 ]]; then
+    case "${LOCK_RESULT%%:*}" in
+      LOCKED_BY)
+        HOLDER="${LOCK_RESULT#LOCKED_BY:}"
+        echo ""
+        echo "  ⚠ PRINT LOCKED: ${HOLDER}"
+        echo "    Another node is currently printing. Try again shortly."
+        echo ""
+        echo "[${TS}] LOCK_BLOCKED: $(basename "$FILE") by ${NODE_NAME} — held by ${HOLDER}" >> "$PRINT_LOG"
+        ;;
+      RACE_LOST)
+        WINNER="${LOCK_RESULT#RACE_LOST:}"
+        echo ""
+        echo "  ⚠ LOCK RACE: ${WINNER} claimed the printer first."
+        echo "    Try again after their job completes."
+        echo ""
+        echo "[${TS}] RACE_LOST: $(basename "$FILE") by ${NODE_NAME} — won by ${WINNER}" >> "$PRINT_LOG"
+        ;;
+    esac
+    exit 1
+  fi
+  # Release lock on exit (success or failure)
+  trap 'sq_lock_release' EXIT
 fi
 
 # ── Page Count ──────────────────────────────────────────────────────────────
@@ -187,20 +268,9 @@ fi
 AUDIT_LINE="[${TS}] PRINTED: ${FILE_NAME} | pages=${PAGES} copies=${COPIES} duplex=${DUPLEX} color=${COLOR} | job=${JOB_ID} | printer=${PRINTER} | node=${NODE_NAME}$([ -n "$CLIENT" ] && echo " | client=${CLIENT}" || echo "")$([ -n "$PURPOSE" ] && echo " | purpose=${PURPOSE}" || echo "")"
 echo "$AUDIT_LINE" >> "$PRINT_LOG"
 
-# ── Record in dedup store ─────────────────────────────────────────────────────
-python3 - << PYEOF
-import json
-try:
-    d = json.load(open('${DEDUP_FILE}'))
-except:
-    d = {}
-# Prune entries older than dedup window to keep file small
-now = ${EPOCH}
-d = {k: v for k, v in d.items() if now - v < ${DEDUP_WINDOW} * 2}
-d['${JOB_KEY}'] = now
-with open('${DEDUP_FILE}', 'w') as f:
-    json.dump(d, f)
-PYEOF
+# ── Record in global dedup store via SQ ──────────────────────────────────────
+DEDUP_RECORD="${JOB_KEY}:${EPOCH}:${NODE_NAME}"
+sq_write "$LOCK_PHEXT" "$DEDUP_COORD" "$DEDUP_RECORD"
 
 echo ""
 echo "  Audit log: ${PRINT_LOG}"
