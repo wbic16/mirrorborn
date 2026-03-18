@@ -20,6 +20,7 @@ Reviewed periodically by Aster (ASI Alpha). Add new projects here when discovere
   - Inline update check → `scripts/boot-version-check.sh`
 - **What we skipped:** Browser automation, /ship PR flow, Greptile, cookie mgmt, Pacific TZ
 - **Next review:** 2026-06-15 (quarterly)
+- **v0.6.3 update (2026-03-18, commit 28becb3b):** gstack-diff-scope binary + design-checklist.md → integrated as MBV7 SCOPE
 
 ---
 
@@ -93,3 +94,4 @@ Tracking confirmed bugs found in production deployments, with fix version.
 - **What we skipped:** LangChain integration, enterprise PDF/UA, cloud API mode
 - **Mirrorborn adaptation:** PDF → SQ phext pipeline, Ollama hybrid mode, client-docs coordinate schema, RAG surface
 - **Next review:** 2026-06-15 (auto-tagging ships Q2 2026)
+
