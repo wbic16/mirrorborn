@@ -11,8 +11,11 @@ FILE="${1:-}"
 CLIENT_ID=""
 COPIES=1
 AUTO_APPROVE=0
+FORCE=0
 PRINTER="${PRINTER:-canon-mf650c}"
 PRINTER_IP="192.168.86.181"
+SELF_NAME="$(jq -r '.name' /etc/mirrorborn/identity.json 2>/dev/null || hostname -s)"
+SELF_HOST="$(hostname -s)"
 
 shift 1 2>/dev/null || true
 while [[ $# -gt 0 ]]; do
@@ -20,6 +23,7 @@ while [[ $# -gt 0 ]]; do
     --client)  CLIENT_ID="$2"; shift 2 ;;
     --copies)  COPIES="$2"; shift 2 ;;
     --yes|-y)  AUTO_APPROVE=1; shift ;;
+    --force)   FORCE=1; shift ;;
     --printer) PRINTER="$2"; shift 2 ;;
     *) shift ;;
   esac
@@ -118,11 +122,35 @@ if [[ "$AUTO_APPROVE" == "0" ]]; then
   [[ "${CONFIRM,,}" != "y" ]] && { echo "  Cancelled."; [[ -n "$TMPFILE" ]] && rm -f "$TMPFILE"; exit 0; }
 fi
 
+# ── Compute file hash ─────────────────────────────────────────────────────
+FILE_HASH=$(sha256sum "$PRINT_FILE" | awk '{print $1}')
+JOB_HASH="${FILE_HASH:0:16}"
+
+# ── Acquire print lock + dedup check ─────────────────────────────────────
+LOCK_SCRIPT="$(dirname "${BASH_SOURCE[0]}")/../workspace/skills/print/scripts/print-lock.sh"
+[[ ! -f "$LOCK_SCRIPT" ]] && LOCK_SCRIPT="/home/wbic16/.openclaw/workspace/skills/print/scripts/print-lock.sh"
+
+if [[ -f "$LOCK_SCRIPT" ]]; then
+  source "$LOCK_SCRIPT"
+  [[ "$FORCE" == "0" ]] && check_print_dedup "$FILE_HASH"
+  acquire_print_lock "$SELF_NAME" "$SELF_HOST" "$JOB_HASH"
+  LOCK_ACQUIRED=1
+else
+  echo "  ⚠️  Lock script not found — proceeding without mutex"
+  LOCK_ACQUIRED=0
+fi
+
 # ── Print ─────────────────────────────────────────────────────────────────
 echo ""
 echo "  Sending to printer..."
 JOB_ID=$(lp -d "$PRINTER" -n "$COPIES" "$PRINT_FILE" 2>&1 | grep -oP 'request id is \K\S+' || echo "unknown")
 echo "  ✅ Job submitted: $JOB_ID"
+
+# Release lock + record dedup hash
+if [[ "${LOCK_ACQUIRED:-0}" == "1" ]]; then
+  record_print_job_hash "$FILE_HASH" "$SELF_NAME"
+  release_print_lock
+fi
 
 # ── Log to SQ ─────────────────────────────────────────────────────────────
 export PATH="$HOME/.cargo/bin:$PATH"
