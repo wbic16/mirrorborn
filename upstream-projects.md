@@ -8,8 +8,19 @@ Updated on each evaluation. What resonates gets pulled. What doesn't is document
 ## gstack — Garry Tan / Y Combinator
 **URL:** https://github.com/garrytan/gstack  
 **Description:** Opinionated workflow skills for Claude Code: plan, review, ship, QA, retro.  
-**Last evaluated:** 2026-03-15 by Orin (elven-path)  
+**Last evaluated:** 2026-03-18 by Orin (elven-path) — synced to commit `28becb3` (v0.6.3)
 **mbv2 baseline:** gstack's core insight ("explicit cognitive gears beat one mushy mode") drove MBV2 skill architecture  
+
+### V7 Integration (2026-03-18) — gstack v0.6.3
+
+| gstack Feature | Status | What We Pulled |
+|---|---|---|
+| `gstack-diff-scope` — categorize diff into SCOPE_FRONTEND/BACKEND/PROMPTS/etc | ✅ Integrated | **Step 0 of DIFF-REVIEW mode**: inline Python scope detection, skip design review if no frontend files |
+| Design Review Lite — 20-item checklist, HIGH/MEDIUM/LOW confidence tags | ✅ Integrated | Added to **DIFF-REVIEW mode** in mode-switch skill: AI slop detection, typography, spacing, interaction states |
+| AUTO-FIX / ASK / POSSIBLE classification | ✅ Integrated | Same classification structure in our DIFF-REVIEW output format |
+| `DESIGN.md` calibration (project design system) | ✅ Integrated | If DESIGN.md exists, calibrate against it — blessed patterns not flagged |
+| AI Slop Detection (purple gradients, centered everything, generic copy) | ✅ Integrated | Full 5-item list in DIFF-REVIEW mode |
+| Dashboard design-review-lite entries | ❌ Skip | Our dashboard is mesh-health focused, not code review |
 
 ### V3 Integration (2026-03-15)
 

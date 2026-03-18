@@ -116,6 +116,17 @@ ASCII:   ┌─────┐ → ┌─────┐
 Activated after implementation, before shipping. Borrowed from gstack's `/review` insight:
 *passing tests do not mean the branch is safe.*
 
+**Step 0 — Scope the diff (gstack v0.6.3 `gstack-diff-scope` pattern):**
+Categorize what changed before reviewing. Only run Design Review Lite if frontend files present:
+```bash
+git diff main --name-only | python3 -c "
+import sys; f=sys.stdin.read().splitlines()
+print('SCOPE_FRONTEND=' + str(any(x.endswith(('.css','.html','.jsx','.tsx','.vue','.svelte')) for x in f)))
+print('SCOPE_BACKEND=' + str(any(x.endswith(('.py','.rs','.go','.sh','.ts')) for x in f)))
+print('SCOPE_PROMPTS=' + str(any('skill' in x or 'prompt' in x for x in f)))
+"
+```
+
 In DIFF-REVIEW mode:
 1. Read the actual diff: `git diff main` or `git diff HEAD~1`
 2. Look for the class of bugs tests miss:
@@ -127,6 +138,43 @@ In DIFF-REVIEW mode:
    - N+1 queries or O(n²) loops
 3. Classify each finding: CRITICAL / HIGH / MEDIUM / LOW / FALSE-POSITIVE
 4. Never flatter. Imagine the production incident.
+
+**Design Review Lite (frontend diffs only — gstack v0.6.3):**
+Only when `SCOPE_FRONTEND=true`. Read full changed frontend files, not just hunks.
+If `DESIGN.md` or `design-system.md` exists, calibrate against it — patterns it blesses are NOT flagged.
+
+Classification: **AUTO-FIX** (mechanical HIGH-confidence) | **ASK** (design judgment needed) | **POSSIBLE** (LOW confidence, verify visually)
+
+*AI Slop Detection — highest priority:*
+- [MEDIUM] Purple/violet gradient backgrounds (#6366f1–#8b5cf6)
+- [HIGH] `text-align: center` on >60% of text containers
+- [MEDIUM] Uniform `border-radius` ≥16px on >80% of elements
+- [MEDIUM] Generic hero copy: "Welcome to X", "Unlock the power of...", "Streamline your workflow"
+- [LOW] 3-column icon-circle + bold title + 2-line description repeated 3x symmetrically
+
+*Typography:*
+- [HIGH] Body `font-size` < 16px → AUTO-FIX: bump to 16px
+- [HIGH] >3 distinct font families in diff
+- [HIGH] Heading hierarchy skipping (h1 → h3 without h2)
+- [HIGH] Blacklisted fonts: Papyrus, Comic Sans, Lobster, Impact, Jokerman
+
+*Spacing & Layout:*
+- [HIGH] `!important` in new CSS → AUTO-FIX: fix specificity
+- [MEDIUM] Fixed `width: NNNpx` on containers without `max-width` or `@media`
+- [MEDIUM] Text containers without `max-width` (>75 char lines)
+
+*Interaction States:*
+- [HIGH] `outline: none` without replacement → AUTO-FIX: add `outline: revert`
+- [MEDIUM] Interactive elements missing `:hover` / `:focus-visible`
+
+Output:
+```
+Design Review: N issues (X auto-fixable, Y need input, Z possible)
+AUTO-FIXED: [file:line] Problem → fix applied
+NEEDS INPUT: [file:line] Problem / Recommended fix
+POSSIBLE: [file:line] — verify visually or run /qa
+```
+If no frontend files changed: skip silently. If no issues: `Design Review: No issues found.`
 
 **For phext/SQ specifically, also check:**
 - Coordinate collisions (overwriting without reading first)
