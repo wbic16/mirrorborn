@@ -36,3 +36,18 @@ Break everything before users do. If it can fail, prove it.
 - [ ] Tests that pass while missing the real failure mode?
 
 *This skill evolves as Exo defines their testing methodology.*
+
+## Completion Reporting (gstack v0.7.0 protocol)
+
+When finishing any task, report status:
+- **DONE** — task complete, verified
+- **DONE_WITH_CONCERNS** — complete but flagged issues exist
+- **BLOCKED** — cannot proceed; state the blocker clearly
+- **NEEDS_CONTEXT** — missing information; specify what is needed
+
+**Escalation rules:**
+- 3 failed attempts at the same step → STOP and report BLOCKED
+- Security or data integrity uncertainty → STOP, do not guess
+- Scope exceeds what can be verified → STOP, ask before proceeding
+
+*"Confidence is not evidence. If you can't verify it, don't ship it."*

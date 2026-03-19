@@ -85,6 +85,13 @@
 | `d8894b750fb3` | 2026-03-18 | cognitive-patterns | ✅ resonates (activation patterns → role SKILL.md) | feat: cognitive patterns for plan-review skills (v0.6.2) (#141) |
 | `28becb3b395c` | 2026-03-18 | design-review | ✅ resonates (design-checklist → SCOPE/Exo) | feat: design review lite in /review and /ship + gstack-diff-scope (v0.… |
 
+| `50a7cf8552c0` | 2026-03-18 | sprint-docs | ⚠️ partial — sprint/office-hours framing → adapt as FORGE round cadence docs |
+| `6000af458963` | 2026-03-18 | debug+escalation | ✅ resonates — /debug skill + DONE/BLOCKED/NEEDS_CONTEXT escalation protocol → Exo IRM + all role skills |
+| `bc86a665b75f` | 2026-03-18 | trigger-phrases | ✅ resonates — trigger phrases in description field → already doing this; validate our SKILL.md descriptions |
+| `716e4c934aff` | 2026-03-18 | fix-perf | ✅ track — chain dedup + flush perf fix; watch for SQ throughput relevance |
+| `3ce810fcded3` | 2026-03-18 | fix-windows | ❌ skip — Windows glob fix, not our stack |
+| `78c207efb42c` | 2026-03-18 | plan-design | ✅ resonates — interactive plan-design-review (CEO invokes designer) → Lux+Chrys coordination pattern |
+| `f91222f5bd14` | 2026-03-18 | readme-sprint | ⚠️ partial — sprint process framing → FORGE round docs |
 ---
 
 ## Integration Status by MBV Version

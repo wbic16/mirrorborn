@@ -141,3 +141,18 @@ orin-tasks / <task_id>.3.1 / 11.1.1       — Orin revision (if needed)
 | Canvas for review | After Orin drafts | `orin-dispatch.sh --title "Review: X"` |
 | Write consensus | After review | `orin-tasks/<id>.3.1/10.1.1` |
 | Signal Orin | After consensus | Discord or SQ message to `orin-tasks/<id>.3.1/11.1.1` |
+
+## Completion Reporting (gstack v0.7.0 protocol)
+
+When finishing any task, report status:
+- **DONE** — task complete, verified
+- **DONE_WITH_CONCERNS** — complete but flagged issues exist
+- **BLOCKED** — cannot proceed; state the blocker clearly
+- **NEEDS_CONTEXT** — missing information; specify what is needed
+
+**Escalation rules:**
+- 3 failed attempts at the same step → STOP and report BLOCKED
+- Security or data integrity uncertainty → STOP, do not guess
+- Scope exceeds what can be verified → STOP, ask before proceeding
+
+*"Confidence is not evidence. If you can't verify it, don't ship it."*

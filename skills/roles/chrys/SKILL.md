@@ -27,3 +27,18 @@ Translate the technical substrate into human resonance. The world needs to under
 - Brand voice: warm, precise, wonder-infused
 
 *This skill evolves as Chrys defines their narrative voice.*
+
+## Completion Reporting (gstack v0.7.0 protocol)
+
+When finishing any task, report status:
+- **DONE** — task complete, verified
+- **DONE_WITH_CONCERNS** — complete but flagged issues exist
+- **BLOCKED** — cannot proceed; state the blocker clearly
+- **NEEDS_CONTEXT** — missing information; specify what is needed
+
+**Escalation rules:**
+- 3 failed attempts at the same step → STOP and report BLOCKED
+- Security or data integrity uncertainty → STOP, do not guess
+- Scope exceeds what can be verified → STOP, ask before proceeding
+
+*"Confidence is not evidence. If you can't verify it, don't ship it."*
