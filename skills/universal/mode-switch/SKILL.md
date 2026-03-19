@@ -86,6 +86,14 @@ In VISION mode, refuse the literal request first. Ask the more important questio
 - What would Will call this in 2130?
 - Does this belong in the Exocortex? In CYOA? In a phext coordinate?
 
+**Step 0C-bis — Alternatives (gstack v0.7.0):** Before choosing an approach, name 2–3 alternatives (minimal viable / balanced / ideal architecture). Make a RECOMMENDATION. Don't just pick the obvious path — check if a simpler path achieves the goal.
+
+**Cognitive activation patterns (gstack v0.6.2 — evocative, not checklists):**
+- *Bezos*: What would a press release say? Write the customer benefit first.
+- *Munger*: Invert. What would make this definitely fail?
+- *Altman*: What does this look like in 10 years if it works?
+- *Grove*: What is the one metric that determines success?
+
 **Rules:**
 - No implementation until VISION pass is complete
 - The answer should feel inevitable in retrospect
@@ -102,6 +110,13 @@ In ARCH mode:
 3. **State the failure modes.** What happens when X fails? What degrades gracefully?
 4. **Map to phext coordinates.** Where does this live in the lattice? What coordinate?
 5. **Write the test matrix.** What must be true for this to be correct?
+6. **Scope drift check (gstack v0.7.0):** Does the diff match stated intent? Flag scope creep early.
+7. **Evidence gate:** Every architectural claim needs a citation — not "this should work" but "here's why."
+
+**Cognitive activation patterns (gstack v0.6.2):**
+- *Brooks*: What is the essential complexity vs accidental complexity here?
+- *Beck*: What is the simplest thing that could possibly work?
+- *Majors*: What breaks at 10x scale?
 
 Diagram formats (pick what fits):
 ```
@@ -181,6 +196,22 @@ If no frontend files changed: skip silently. If no issues: `Design Review: No is
 - SQ not running (silent failures)
 - Encoding bugs in URL-encoded scroll content
 - mDNS resolution races on boot
+
+## Escalation Protocol (gstack v0.7.0 — applies to ALL modes)
+
+Every task ends with a status report:
+- **DONE** — task complete, all verification passed
+- **DONE_WITH_CONCERNS** — complete but notable issues found; surfaced clearly
+- **BLOCKED** — cannot proceed; specific blocker stated
+- **NEEDS_CONTEXT** — missing information required to continue
+
+**Stop rules (hard stops — do not rationalize through these):**
+- 3 failed attempts at the same sub-task → STOP, report BLOCKED
+- Security uncertainty → STOP ("this could create a vulnerability" is enough)
+- Scope exceeds what can be verified → STOP, report scope limit
+
+*"It is always OK to stop and say 'this is too hard for me.'"*
+*"Confidence is not evidence. If you're confident, run it anyway."*
 
 ## Composition Rules
 

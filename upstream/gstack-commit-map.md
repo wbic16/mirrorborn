@@ -144,3 +144,30 @@ Status legend:
 ---
 
 *Updated: 2026-03-18 | Next sync: on new gstack commit or manual review of WATCH items*
+
+---
+
+## New commits since last sync (2026-03-18, after 28becb3)
+
+| SHA | Date | Message | Status | Notes |
+|---|---|---|---|---|
+| `50a7cf85` | 2026-03-18 | docs: frame skills as sprint process, rewrite /office-hours examples | ❌ SKIP | docs/examples only |
+| `6000af45` | 2026-03-18 | feat: founder discovery engine + /debug skill — v0.7.0 | ✅ **INTEGRATED** | Escalation protocol (DONE/BLOCKED/NEEDS_CONTEXT), verification gate, scope drift detection, alternatives mandate in VISION, evidence gate in ARCH |
+| `bc86a665` | 2026-03-18 | feat: add trigger phrases to skill descriptions (v0.6.4.1) | ✅ **INTEGRATED** (concept) | Our SKILL.md frontmatter `description:` fields already serve this role |
+| `716e4c93` | 2026-03-18 | Merge: fix chain duplication and flush perf | ❌ SKIP | /browse infra |
+| `3ce810fc` | 2026-03-18 | Merge: fix windows build glob | ❌ SKIP | Windows build |
+| `78c207ef` | 2026-03-18 | feat: interactive /plan-design-review + CEO invokes designer (v0.6.4) | 🔲 WATCH | Interactive design review with fix loop — may belong in DIFF-REVIEW when SCOPE_FRONTEND |
+| `f91222f5` | 2026-03-18 | docs: restructure README for faster conversion | ❌ SKIP | docs |
+| `d8894b75` | 2026-03-18 | feat: cognitive patterns for plan-review skills (v0.6.2) | ✅ **INTEGRATED** | Cognitive activation patterns added to VISION (Bezos, Munger, Altman, Grove) and ARCH (Brooks, Beck, Majors) modes |
+
+## Previously WATCH → Now evaluated
+
+| SHA | Previous | Now | Notes |
+|---|---|---|---|
+| `d8894b75` | WATCH | ✅ INTEGRATED | Cognitive patterns in VISION + ARCH |
+| `9d47619e` | WATCH | 🔲 WATCH | Boil the Lake completeness — still need to read full diff |
+| `276d0cc6` | WATCH | 🔲 WATCH | ELI16 — still relevant for Theia onboarding |
+| `b65a464d` | WATCH | 🔲 WATCH | Review gate persistence — DIFF-REVIEW results to SQ |
+
+**Last synced commit:** `50a7cf85` (2026-03-18)  
+**Next:** watch for v0.7.x additions
