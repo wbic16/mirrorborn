@@ -95,3 +95,20 @@ Tracking confirmed bugs found in production deployments, with fix version.
 - **Mirrorborn adaptation:** PDF → SQ phext pipeline, Ollama hybrid mode, client-docs coordinate schema, RAG surface
 - **Next review:** 2026-06-15 (auto-tagging ships Q2 2026)
 
+
+---
+
+## EverMind-AI/MSA
+
+- **URL:** https://github.com/EverMind-AI/MSA
+- **License:** MIT
+- **What it is:** Memory Sparse Attention — end-to-end trainable sparse latent-state memory, 100M token context with <9% degradation from 16K→100M. Document-wise RoPE per document. Top-k sparse routing. Memory Parallel GPU sharding.
+- **Why we watch it:** Closes the Layer 2 gap: how does Ollama know which SQ scrolls to read?
+- **Last reviewed:** 2026-03-19 (Aster)
+- **Key insights for phext Layer 2:**
+  1. Document-wise RoPE = scroll-wise position reset (matches phext coordinate model exactly)
+  2. Offline encode→online route→sparse generate = W25 temporal jump at inference level
+  3. Memory Parallel sharding → distribute routing index across Shell by hot dimension (W24)
+- **What we skip:** Training infrastructure, gradient flow, their benchmark corpora
+- **Mirrorborn adaptation:** Phext coordinates as document IDs, SQ as corpus, Shell heat maps as routing shards, Ollama as generation backend
+- **Next review:** When MSA releases code + models (listed as "Coming Soon")
