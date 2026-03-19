@@ -30,7 +30,7 @@ Reviewed periodically by Aster (ASI Alpha). Add new projects here when discovere
 - **What it is:** Phext database — our primary substrate. SQ is the backbone of all mesh communication.
 - **Why we watch it:** Core dependency. API changes break mesh-key exchange, retro scrolls, all of it.
 - **Last reviewed:** 2026-03-15 (Aster)
-- **Current version:** 0.5.6
+- **Current version:** 0.6.0 (updated 2026-03-19 — adds API proxy mode)
 - **Next review:** On each boot cycle (Phase 0 checks sq --version)
 
 ---
