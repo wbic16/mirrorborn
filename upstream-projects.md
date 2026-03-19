@@ -216,3 +216,58 @@ pip install "opendataloader-pdf[hybrid]"  # + AI hybrid (complex tables, OCR, fo
 Requires Java 11+ for the core engine.
 
 **Next evaluation trigger:** Harold's first PDF spec arrives; Q2 2026 auto-tagging release.
+
+---
+
+## MSA — Memory Sparse Attention (EverMind-AI)
+**URL:** https://github.com/EverMind-AI/MSA  
+**Paper:** MSA: Memory Sparse Attention for Efficient End-to-End Memory Model Scaling to 100M Tokens  
+**Description:** End-to-end trainable sparse latent-state memory. Top-k document routing fused with generation into one differentiable loop. <9% degradation at 100M tokens on 2×A800.  
+**Last evaluated:** 2026-03-19 by Orin (elven-path)  
+**Target:** MBV8
+
+### What MSA Does (layer 2 phext relevance only)
+
+Three-stage: **offline encode → online route → sparse generate**
+
+1. **Offline encode:** compute chunk-mean-pooled K/V/Kᵣ for each document. Store in host DRAM. This is TTSM's `commit()` — immutable past on SSD.
+
+2. **Online route:** query computes cosine similarity against Kᵣ index, selects Top-k documents, loads only their K̄/V̄. This is W26's heat-map router — route to where the data is hot.
+
+3. **Sparse generate:** autoregress over the sparse assembled context. Only top-k docs cross the wire. This is W27's temporal jump streaming — delta not full state.
+
+**Document-wise RoPE:** each document resets position from 0. Prevents position drift between train-short/infer-long. Maps directly to phext's dimension reset semantics — each SCROLL delimiter resets position to 1, enabling 64K training to extrapolate to 100M token contexts.
+
+### What We Extract for Phext (MBV8)
+
+**The key insight:** retrieval and generation are not two separate pipelines — they are one differentiable loop. The router is trained, not ruled.
+
+For phext / vTPU layer 2:
+
+| MSA concept | Phext translation |
+|---|---|
+| Document-wise RoPE (position reset per doc) | Phext scroll delimiter (0x17) resets position — already structural |
+| Chunk-mean-pooled K̄/V̄ (compressed document representation) | Coordinate-addressed compressed state in W27 StateDelta |
+| Top-k routing via cosine similarity on Kᵣ | W26 mesh router: heat_match_depth × (1 - pressure) scoring |
+| End-to-end differentiable loop | W26+W27 feedback loop: routing informs future routing |
+| Offline encoding (immutable past) | TTSM commit() → SSD, replayable |
+| Memory Parallel (shard Kᵣ across GPUs) | W26: distribute heat maps across ranch nodes via SQ |
+| <9% degradation at 100M tokens | vTPU Phase 2 gate: near-zero degradation under scale |
+
+**The one new thing:** MSA proves that position-reset-per-document (document-wise RoPE) enables **extrapolation** — training on 64K, inferring at 100M. Phext already has this structurally: each scroll starts at position 1, each section starts at position 1, etc. The phext delimiter hierarchy *is* a learned position-reset scheme. MSA validates the architecture from the ML side.
+
+**MBV8 integration point:** W28 — teach the vTPU's S-pipe to treat each phext scroll as a position-reset boundary, enabling training on short contexts to generalize to arbitrarily long coordinate spaces without degradation.
+
+### What We Skip
+- Full training pipeline (we use SQ inference, not fine-tuning)
+- NIAH benchmark apparatus (not our eval target)
+- The specific Qwen3-4B backbone
+- Multi-hop Memory Interleave (interesting, but W29+ territory)
+
+### Attribution
+MSA (EverMind-AI) demonstrated:
+- Document-wise position reset as an extrapolation mechanism (validates phext delimiter semantics)
+- End-to-end differentiable retrieval+generation (validates W26 organic routing)
+- Offline encode / online route / sparse generate pipeline (validates TTSM commit/replay/execute)
+
+**Next evaluation trigger:** code release (currently "Coming Soon")
