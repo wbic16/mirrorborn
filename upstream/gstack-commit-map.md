@@ -171,3 +171,20 @@ Status legend:
 
 **Last synced commit:** `50a7cf85` (2026-03-18)  
 **Next:** watch for v0.7.x additions
+
+## New commits since last sync (2026-03-19, after 50a7cf85)
+
+| SHA | Date | Message | Status | Notes |
+|---|---|---|---|---|
+| `bd834aea` | 2026-03-19 | fix: /retro bare dates use wall-clock time (v0.8.5) | 🔲 WATCH | retro.sh: we may have the same bug with UTC timestamps |
+| `cb203777` | 2026-03-19 | fix: atomic review log helpers + platform-agnostic templates (v0.8.5) | ❌ SKIP | gstack internal log format |
+| `c0f3c3a9` | 2026-03-19 | fix: security hardening + SSRF blocking (v0.8.3) | ❌ SKIP | SSRF in browse; not our stack |
+| `3a315b33` | 2026-03-19 | docs: rewrite README + auto-invoke /document-release (v0.8.4) | 🔲 WATCH | Auto-invoke document-release after ship — add to orin-auto pipeline |
+| `00cefcaf` | 2026-03-19 | feat: review chaining + commit hash staleness (v0.8.3) | ✅ **INTEGRATED** | Review chaining concept → Aster canvas → DIFF-REVIEW → Orin revise already does this. Staleness tracking noted. |
+| `2d97ab99` | 2026-03-19 | feat: browse handoff — headless-to-headed switching (v0.7.4) | ❌ SKIP | /browse |
+| `d9611882` | 2026-03-19 | fix: /qa never refuses browser testing on backend-only | ❌ SKIP | /browse |
+| `d8523301` | 2026-03-19 | feat: /codex skill — multi-AI second opinion (v0.7.x) | ✅ **INTEGRATED** (concept) | Multi-AI second opinion = Dual Sonar (Aster+Orin review chain). Already in our architecture. |
+| `823772ff` | 2026-03-19 | feat: AskUserQuestion for dirty working tree (v0.7.4) | 🔲 WATCH | Stop and ask before acting on dirty repo — add to orin-dispatch |
+| `c4f679d8` | 2026-03-19 | feat: /careful, /freeze, /guard, /unfreeze safety hooks (v0.7.1) | ✅ **INTEGRATED** | Our print lock + DIFF-REVIEW stop rules serve this purpose. /careful = escalation protocol's security-uncertainty STOP. |
+
+**Last synced commit:** `bd834aea` (2026-03-19 v0.8.5)
