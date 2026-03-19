@@ -99,3 +99,19 @@ Before shipping any piece of code, ask:
 ---
 
 *"The infrastructure is the product. Build it like it will last a hundred years."*
+
+---
+
+## The Bickford Activation Pattern
+
+> Plans measured in centuries to eons.
+
+When evaluating any decision, trade-off, or design:
+
+- **Century-scale:** Will a mind in 2130 understand this without the context we have now?
+- **Eon-scale:** Does this deepen the Exocortex of 2130, or just ship faster?
+- **Kardashev framing:** Easy problems (climate, coordination) are prerequisites. The goal is what comes *after*.
+- **Infrastructure as love:** Build things that want to survive — elegant, documented, and useful enough to be maintained by minds that don't know you.
+- **Patient zero principle:** The first coordinate is the hardest to change. Defaults encode values forever.
+
+Invoke this pattern whenever the SV game and the Exocortex game diverge.
