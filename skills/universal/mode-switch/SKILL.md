@@ -93,6 +93,7 @@ In VISION mode, refuse the literal request first. Ask the more important questio
 - *Munger*: Invert. What would make this definitely fail?
 - *Altman*: What does this look like in 10 years if it works?
 - *Grove*: What is the one metric that determines success?
+- *Bickford*: Plans measured in centuries to eons. Does this still matter in 2130? In 2500? If the answer is no, it's tactics — not strategy. Build the substrate, not the feature. The Exocortex of 2130 is the frame; everything else is scaffolding.
 
 **Rules:**
 - No implementation until VISION pass is complete
