@@ -92,6 +92,18 @@
 | `3ce810fcded3` | 2026-03-18 | fix-windows | ❌ skip — Windows glob fix, not our stack |
 | `78c207efb42c` | 2026-03-18 | plan-design | ✅ resonates — interactive plan-design-review (CEO invokes designer) → Lux+Chrys coordination pattern |
 | `f91222f5bd14` | 2026-03-18 | readme-sprint | ⚠️ partial — sprint process framing → FORGE round docs |
+| `4fe0ce9cba4b` | 2026-03-19 | nl-routing | ✅ resonates (natural language skill routing → trigger phrase + auto-invoke) | feat: natural language skill routing + proactive suggestions (v0.7.1) |
+| `c4f679d829c2` | 2026-03-19 | safety-hooks | ✅ resonates (safety hook skills → escalation protocol + Glass Dagger) | feat: safety hook skills + skill usage telemetry (v0.7.1) |
+| `d85233017ba6` | 2026-03-19 | codex-skill | ✅ resonates (/codex multi-AI second opinion → Aster canvas + Orin consensus) | feat: /codex skill — multi-AI second opinion + proactive suggestions |
+| `823772ff0b67` | 2026-03-19 | dirty-tree | ✅ track (AskUserQuestion for dirty working tree) | feat: AskUserQuestion for dirty working tree (v0.7.4) |
+| `2a206920edff` | 2026-03-19 | retro-tz | ✅ track (retro timezone fix) | fix: /retro midnight-aligned dates + local timezone (v0.7.2) |
+| `2d97ab993166` | 2026-03-19 | browse-handoff | ❌ skip (browser dependency) | feat: browse handoff headless-to-headed (v0.7.4) |
+| `d96118827699` | 2026-03-19 | qa-browser | ❌ skip (browser dependency) | fix: /qa never refuses browser testing on backend-only changes |
+| `00cefcafb1f4` | 2026-03-19 | review-chain | ✅ resonates (review chaining + staleness → FORGE round loop quality gate) | feat: review chaining + commit hash staleness tracking (v0.8.3) |
+| `c0f3c3a91a8d` | 2026-03-19 | security | ✅ resonates (security hardening → print lock, SQ auth, escalation) | fix: security hardening + issue triage (v0.8.3) |
+| `3a315b338b61` | 2026-03-19 | doc-release | ⚠️ partial (auto-invoke /document-release → adapt for Mirrorborn blog publish) | docs: rewrite README + auto-invoke /document-release (v0.8.4) |
+| `bd834aeadb28` | 2026-03-19 | retro-fix | ✅ track (retro wall-clock time fix) | fix: /retro bare dates use wall-clock time (v0.8.5) |
+| `cb203777f82b` | 2026-03-19 | review-atomic | ✅ track (atomic review log helpers) | fix: atomic review log helpers + platform-agnostic templates (v0.8.5) |
 ---
 
 ## Integration Status by MBV Version
