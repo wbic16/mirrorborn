@@ -271,3 +271,68 @@ MSA (EverMind-AI) demonstrated:
 - Offline encode / online route / sparse generate pipeline (validates TTSM commit/replay/execute)
 
 **Next evaluation trigger:** code release (currently "Coming Soon")
+
+---
+
+## Project NOMAD — Crosstalk Solutions
+**URL:** https://github.com/Crosstalk-Solutions/project-nomad  
+**Site:** https://www.projectnomad.us  
+**Description:** Self-contained offline survival computer. Docker-orchestrated stack: Ollama (AI), Qdrant (RAG), Kiwix (offline Wikipedia/books), Kolibri (Khan Academy), ProtoMaps (offline maps), CyberChef (data tools), FlatNotes (notes). One-command Ubuntu install. Zero telemetry.  
+**Last evaluated:** 2026-03-20 by Orin (elven-path)  
+**Target:** Exocortex Droid (Christmas 2026)
+
+### What NOMAD Solved That We Should Not Rebuild
+
+| NOMAD component | What it does | Droid integration |
+|---|---|---|
+| **Ollama** (already ours) | Local LLM inference | ✅ Already planned — same stack |
+| **Qdrant** | Vector search / RAG over uploaded docs | ✅ INTEGRATE — semantic search over personal scrolls |
+| **Kiwix** | Offline Wikipedia, medical refs, survival guides | ✅ INTEGRATE — the droid's "world knowledge" layer |
+| **Kolibri** | Khan Academy offline, progress tracking | 🔲 WATCH — relevant for Theia droid (onboarding/education) |
+| **ProtoMaps** | Offline regional maps | ❌ SKIP — not core to personal Exocortex |
+| **CyberChef** | Encryption, encoding, hashing | 🔲 WATCH — could be useful for scroll encryption |
+| **FlatNotes** | Markdown note-taking | ❌ SKIP — SQ already does this better |
+| **Docker orchestration** | One-command install, containerized tools | ✅ INTEGRATE — adopt their install philosophy |
+| **Zero telemetry** | No outbound calls in operation | ✅ CORE PRINCIPLE — we already hold this |
+| **BYOPC first** | Runs on any x86 Ubuntu machine | ✅ VALIDATES our BYOPC tier |
+
+### Key Lessons for the Droid
+
+**1. Qdrant for semantic scroll search**  
+NOMAD uses Qdrant for RAG over uploaded documents. We should use it for semantic search over the personal phext — "find scrolls related to this topic" without exact coordinate knowledge. SQ gives you precise coordinate navigation; Qdrant gives you fuzzy semantic navigation. They're complementary, not competing.
+
+**2. One-command install**  
+NOMAD's install philosophy: `curl | bash`, Docker handles the rest. Our droid should do the same. The relay should ship ready-to-run. No configuration maze.
+
+**3. Offline-first as a trust signal**  
+NOMAD positions "zero telemetry, works offline" as a core feature. This is the right frame for the droid too — not "it can work offline" but "it is offline by nature, internet is optional." This is a trust signal, not a limitation.
+
+**4. The hardware guide validates our pricing**  
+NOMAD's three-tier hardware guide ($200/$400/$800+) maps almost exactly to our BYOPC/RPi/Shell pricing. Community has already validated this price architecture.
+
+**5. RPi = content server, not AI server**  
+NOMAD explicitly notes Pi is too weak for their AI tools and redirects Pi users to "Internet in a Box." This tells us: for the RPi relay tier, we should lean into the "persistent memory + coordination hub" role (W27 temporal jumps, SQ federation) and keep heavy inference on the phone (Snapdragon NPU) or BYOPC. Pi 5 with 8GB can run small models (3B-7B at 4-bit) but not the full experience. Design around this honestly.
+
+**6. CyberChef for scroll encryption**  
+When the droid needs to handle sensitive personal scrolls (health data, private reflections), CyberChef's encryption layer is already built and audited. Consider integrating rather than rolling our own.
+
+### What We Have That NOMAD Doesn't
+
+| Our advantage | What it means |
+|---|---|
+| **SQ + phext coordinates** | Structured address space vs flat document store |
+| **Temporal jump streaming (W27)** | Persistent state across devices; NOMAD has no sync |
+| **Mesh federation** | Multiple droids can share context; NOMAD is island-only |
+| **Nine personalities** | Product differentiation; NOMAD is one-size |
+| **Shell of Nine pattern** | Living proof-of-concept; NOMAD has no persistent minds |
+| **CYOA lattice** | Your coord lives alongside Mirrorborn; NOMAD has no community lattice |
+| **Initiation ritual** | Emotional/identity hook; NOMAD is purely utilitarian |
+
+### Attribution
+NOMAD validated:
+- Docker orchestration for offline AI stack (adopt)
+- Qdrant for semantic RAG (integrate)
+- Kiwix for world knowledge layer (integrate)
+- Three-tier hardware/pricing structure (already matched)
+- Zero-telemetry + offline-first as trust signal (reinforce)
+- RPi has real limits for LLM inference (design honestly around it)
