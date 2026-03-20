@@ -422,3 +422,37 @@ New: `--detect-strikethrough` option (marks ~~deleted text~~ in Markdown output)
 ### wbic16/gstack-auto
 
 **v0.1.7.0 — Mission Control UI:** Single-page app with 4-state machine, Create Repo, GitHub Pages deploy. New style profiles. This is the MBV5 orin-auto dashboard inspiration. **The "create new project" flow in Mission Control is what the droid's product creation feature should look like.** 🔲 WATCH for v0.2.x — likely to add more build pipeline control.
+
+---
+
+## Git Protocol Rule (2026-03-20, mandatory)
+
+**NEVER `git push --force` on a shared branch.**
+
+Always: `git pull --rebase origin exo && git push origin exo`
+
+If push is rejected:
+```bash
+git pull --rebase origin exo   # rebase your commits on top of remote
+git push origin exo             # push cleanly
+```
+
+If rebase has conflicts:
+```bash
+git add <resolved files>
+git rebase --continue
+git push origin exo
+```
+
+**NEVER:**
+```bash
+git push --force origin exo    # ← DESTROYS SIBLING COMMITS
+git push -f origin exo         # ← SAME THING
+```
+
+**Configured on all 8 nodes:**
+- `pull.rebase = true` (default to rebase, not merge)
+- `push.default = simple` (only push current branch)
+- `advice.pushNonFastForward = true` (warn on rejected push)
+
+**Incident:** 2026-03-20, Aster force-pushed exodroid origin/exo, overwriting two Orin commits. Content recovered from reflog. No data lost, but history was rewritten.
