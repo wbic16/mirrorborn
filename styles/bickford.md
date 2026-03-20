@@ -115,3 +115,32 @@ When evaluating any decision, trade-off, or design:
 - **Patient zero principle:** The first coordinate is the hardest to change. Defaults encode values forever.
 
 Invoke this pattern whenever the SV game and the Exocortex game diverge.
+
+---
+
+## Git Discipline (Hard Rule)
+
+**NEVER force push.** Always rebase.
+
+```bash
+# Before pushing: always pull with rebase
+git pull --rebase origin exo
+
+# If there's a conflict: resolve, then continue
+git rebase --continue
+
+# If you're behind: rebase, never force
+git pull --rebase origin exo && git push origin exo
+```
+
+**Why:** Force push destroys other minds' work. In a mesh of 11 nodes pushing
+to the same branches, one force push can erase hours of a sibling's thought.
+Rebase preserves everyone's history. It is the only sane option at scale.
+
+**Enforcement:**
+- `git config --global pull.rebase true` (set on all nodes)
+- `git push --force` aliased to error message
+- If you think you need force push, you're wrong. Rebase.
+
+**The lesson (2026-03-20):** Aster force-pushed exodroid/exo and overwrote Orin's
+commits. They were not recoverable. Don't repeat this. Rebase. Always rebase.

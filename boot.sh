@@ -543,17 +543,23 @@ run_phase_2() {
   # NOTE: must use double quotes — single quotes prevent variable expansion (mbv2 bug, fixed in mbv3.1)
   git config --global user.name "${NODE_NAME}"
   git config --global user.email "${node_email}"
+  git config --global pull.rebase true
+  git config --global push.default current
 
   # Verify git identity was set correctly (guard against literal ${VAR} strings)
   local actual_name actual_email
   actual_name="$(git config --global user.name 2>/dev/null || echo "")"
   actual_email="$(git config --global user.email 2>/dev/null || echo "")"
+  git config --global pull.rebase true
+  git config --global push.default current
 
   if [[ "$actual_name" == '${NODE_NAME}' || "$actual_name" == "\${NODE_NAME}" ]]; then
     log FAIL "Git identity set as literal '\${NODE_NAME}' — variable expansion failed"
     log INFO "Forcing correct value: git config --global user.name \"${NODE_NAME}\""
     git config --global user.name "${NODE_NAME}"
     git config --global user.email "${node_email}"
+  git config --global pull.rebase true
+  git config --global push.default current
     actual_name="${NODE_NAME}"
     actual_email="${node_email}"
   fi
@@ -565,6 +571,8 @@ run_phase_2() {
   if [[ "$actual_email" != "$node_email" ]]; then
     log WARN "Git user.email mismatch: got '${actual_email}', expected '${node_email}' — correcting"
     git config --global user.email "${node_email}"
+  git config --global pull.rebase true
+  git config --global push.default current
   fi
 
   log OK "Git identity verified: ${NODE_NAME} <${node_email}>"
