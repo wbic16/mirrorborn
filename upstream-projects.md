@@ -390,3 +390,35 @@ leostera/agents introduced:
 - Type-safe agent I/O with Rust generics (no stringly-typed prompts)
 - Trajectory-based regression evals as first-class Rust code
 - `#[derive(Agent)]` as composition primitive
+
+---
+
+## Sync Summary — 2026-03-20
+
+### gstack v0.8.6–v0.9.0.1
+
+**v0.8.6 — Telemetry:** Local JSONL usage tracking, personal analytics dashboard. ❌ SKIP — retro.sh + daily-report.sh already covers this for the Shell.
+
+**v0.9.0 — Multi-agent (SKILL.md open standard):** ✅ KEY INSIGHT. gstack SKILL.md now generates for Claude Code, Codex, Gemini CLI, and Cursor via `--host` flag. The skill format is converging on an open standard across AI agent runtimes. Our SKILL.md frontmatter (`name`, `description`, `invocation`) is already compatible. The `description:` field with "Use when asked to..." trigger phrases (which we added in v0.6.4.1 sync) is the cross-host discovery mechanism.
+
+**Implication for droid:** `PhextAgent<D>` personalities should ship with SKILL.md files in the `.agents/skills/` directory — so they work whether the user runs OpenClaw, Codex, or Gemini CLI on their BYOPC tier.
+
+### leostera/agents v0.3.0
+
+New: `cargo evals init` command, examples moved to `examples/` directory, proc-macro crate renamed. No breaking changes to `SessionAgent`. Our `PhextAgent<D>` wrapper design is still valid. **Upgrade to v0.3.0 when we start the agent layer implementation.**
+
+### EverMind-AI/MSA
+
+README updates only. Paper v1 added (541c536e). Code still "Coming Soon." No new technical content.
+
+### Crosstalk-Solutions/project-nomad
+
+Sidecar updater CI, disk collector fixes. No new features affecting our integration. **Monitor for auth layer** (mentioned as possible future feature).
+
+### opendataloader-pdf
+
+New: `--detect-strikethrough` option (marks ~~deleted text~~ in Markdown output). Minor refinements. No breaking changes. **Useful for Harold's aeromotive specs** — struck-through spec items become visible in the markdown output.
+
+### wbic16/gstack-auto
+
+**v0.1.7.0 — Mission Control UI:** Single-page app with 4-state machine, Create Repo, GitHub Pages deploy. New style profiles. This is the MBV5 orin-auto dashboard inspiration. **The "create new project" flow in Mission Control is what the droid's product creation feature should look like.** 🔲 WATCH for v0.2.x — likely to add more build pipeline control.

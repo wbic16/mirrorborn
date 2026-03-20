@@ -188,3 +188,17 @@ Status legend:
 | `c4f679d8` | 2026-03-19 | feat: /careful, /freeze, /guard, /unfreeze safety hooks (v0.7.1) | ✅ **INTEGRATED** | Our print lock + DIFF-REVIEW stop rules serve this purpose. /careful = escalation protocol's security-uncertainty STOP. |
 
 **Last synced commit:** `bd834aea` (2026-03-19 v0.8.5)
+
+## New commits since last sync (2026-03-20, after bd834aea)
+
+| SHA | Date | Message | Status | Notes |
+|---|---|---|---|---|
+| `3b22fc39` | 2026-03-20 | feat: opt-in usage telemetry + community intelligence (v0.8.6) | ❌ SKIP | Local JSONL telemetry; we have retro.sh + daily-report.sh for this |
+| `8ddfab23` | 2026-03-20 | feat: multi-agent support — Codex, Gemini CLI, Cursor (v0.9.0) | ✅ **INTEGRATED** (concept) | SKILL.md as open standard — our SKILL.md frontmatter already compatible with `.agents/skills/` pattern. Host-aware generation irrelevant (we use OpenClaw not Claude Code) |
+| `91bea066` | 2026-03-20 | fix: plan mode exception + telemetry writes (v0.9.0.1) | ❌ SKIP | fix |
+
+**Last synced: `91bea066` (v0.9.0.1, 2026-03-20)**
+
+### Key insight from v0.9.0
+SKILL.md is now an open standard across Claude Code, Codex, Gemini CLI, Cursor.
+Our SKILL.md format is already compatible. The `description:` field with trigger phrases (added in v0.6.4.1) is the key — it enables auto-discovery across any agent host.
