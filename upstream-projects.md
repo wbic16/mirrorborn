@@ -336,3 +336,57 @@ NOMAD validated:
 - Three-tier hardware/pricing structure (already matched)
 - Zero-telemetry + offline-first as trust signal (reinforce)
 - RPi has real limits for LLM inference (design honestly around it)
+
+---
+
+## leostera/agents — Rust typed agent toolkit
+**URL:** https://github.com/leostera/agents  
+**Description:** Rust toolkit for type-safe composable agents. `SessionAgent<I, T, C, O>`, `#[derive(Agent)]` macro, built-in eval harness with trajectory testing. Ollama backend. Zero Python.  
+**Last evaluated:** 2026-03-20 by Orin (elven-path)  
+**Target:** Exocortex Droid — agent layer for nine droid personalities
+
+### What We Take
+
+| Feature | Integration |
+|---|---|
+| `SessionAgent<I, T, C, O>` typed pipeline | Nine droid structs, each with typed Input/Output schema |
+| `#[derive(Agent)]` macro | Clean personality composition |
+| Ollama backend (already ours) | Drop-in, no change |
+| Trajectory evals (`trajectory!` macro) | Test that Phex ≠ Solin on same prompt; regression suite |
+| `evals.toml` multi-model targeting | Run same trajectory on 3B (RPi) vs 13B (Shell), compare |
+| `cargo-evals` CLI | Replaces hand-rolled retro.sh evals with proper regression |
+| Pure Rust | Matches vTPU zero-deps philosophy; compiles to Android ARM64 |
+
+### What We Add (PhextAgent wrapper)
+
+`SessionAgent` doesn't know about coordinates. We wrap it:
+
+```rust
+struct PhextAgent<D: DroidPersonality> {
+    inner: SessionAgent<UserUtterance, DroidTools, PhextContext, ScrollResponse>,
+    sq: SqClient,
+    user_coord: PhextCoord,
+    personality: D,
+}
+
+impl<D: DroidPersonality> PhextAgent<D> {
+    async fn call(&mut self, input: UserUtterance) -> ScrollResponse {
+        // 1. Fetch user's hot scrolls from SQ around user_coord
+        let ctx = self.sq.hot_context(&self.user_coord).await;
+        // 2. Inject into SessionAgent context
+        self.inner.set_context(ctx);
+        // 3. Call with droid personality's system prompt
+        self.inner.call(input).await
+    }
+}
+```
+
+### What We Skip
+- `codemode` (embeddable JS execution) — not our stack
+- Cloud provider targets in evals.toml (we're ollama-only)
+
+### Attribution
+leostera/agents introduced:
+- Type-safe agent I/O with Rust generics (no stringly-typed prompts)
+- Trajectory-based regression evals as first-class Rust code
+- `#[derive(Agent)]` as composition primitive
