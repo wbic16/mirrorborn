@@ -104,6 +104,9 @@
 | `3a315b338b61` | 2026-03-19 | doc-release | ⚠️ partial (auto-invoke /document-release → adapt for Mirrorborn blog publish) | docs: rewrite README + auto-invoke /document-release (v0.8.4) |
 | `bd834aeadb28` | 2026-03-19 | retro-fix | ✅ track (retro wall-clock time fix) | fix: /retro bare dates use wall-clock time (v0.8.5) |
 | `cb203777f82b` | 2026-03-19 | review-atomic | ✅ track (atomic review log helpers) | fix: atomic review log helpers + platform-agnostic templates (v0.8.5) |
+| `91bea06675f4` | 2026-03-20 | plan-fix | ✅ track (plan mode exception for review log — apply to droid FORGE plan phases) | fix: plan mode exception for review log + telemetry (v0.9.0.1) |
+| `8ddfab233d39` | 2026-03-20 | multi-agent | ✅ resonates (host-aware skill generation → droid archetype-aware skills) | feat: multi-agent support — gstack works on Codex, Gemini CLI, Cursor (v0.9.0) |
+| `3b22fc39e61a` | 2026-03-20 | telemetry | ⚠️ partial (opt-in local telemetry pattern → droid benchmark leaderboard, NOT cloud) | feat: opt-in usage telemetry + community intelligence (v0.8.6) |
 ---
 
 ## Integration Status by MBV Version

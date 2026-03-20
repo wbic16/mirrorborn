@@ -148,3 +148,40 @@ Tracking confirmed bugs found in production deployments, with fix version.
 - **Skipped:** `codemode` (JS execution), direct LlmRunner replacement
 - **Integration point:** `agents` defines contracts, OpenClaw runs them, `evals` grades them
 - **Next review:** 2026-06-20
+
+---
+
+## wbic16/gstack-auto (Will's fork)
+
+- **URL:** https://github.com/wbic16/gstack-auto
+- **Last reviewed:** 2026-03-20 (Aster)
+- **New since MBV5 proposal:** Mission Control UI (unified single-page dashboard), /styles API for style profile metadata, GitHub Pages deploy, New Project/Repo creation from UI.
+- **Key for droid:** Mission Control pattern → droid Command Center UI. `/styles` API → droid archetype selection UI. GitHub Pages deploy → droid publishing pipeline.
+- **Latest:** v0.1.7.0 (2026-03-17), 10 commits since evaluated
+
+---
+
+## loperanger7/gstack-auto (upstream)
+
+- **URL:** https://github.com/loperanger7/gstack-auto
+- **Last reviewed:** 2026-03-20 (Aster)
+- **New:** Pipeline v2 (gstack v0.6.1 sync, lean refactor, self-improving rounds), design review pipeline with AI slop detection, per-row save button UI consistency.
+- **Key for droid:** Self-improving rounds concept (each round's winner improves) → FORGE round loop. AI slop detection in pipeline → Exo's design review in droid build pipeline.
+- **Latest:** v0.1.11.0 pipeline v2 (2026-03-18)
+
+---
+
+## leostera/agents (v0.3.0)
+
+- **URL:** https://github.com/leostera/agents
+- **Last reviewed:** 2026-03-20 (Aster)
+- **v0.3.0 new:** `cargo-evals init` command, examples reorganized, proc-macros renamed.
+- **No breaking changes** from our evaluation. `SessionAgent<I,T,C,O>` pattern stable.
+
+---
+
+## opendataloader-project/opendataloader-pdf
+
+- **Last reviewed:** 2026-03-20 (Aster)
+- **New:** Strikethrough text detection (--detect-strikethrough), narrow outlier filtering fix, vertical gap detection improvements, GitHub Trending #1 badge (peak visibility week).
+- **Droid relevance:** Strikethrough detection useful for legal docs (Harold's contracts with deletions visible). No breaking API changes.
