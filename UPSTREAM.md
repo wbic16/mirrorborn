@@ -129,3 +129,22 @@ Tracking confirmed bugs found in production deployments, with fix version.
   - Community benchmark leaderboard mechanic
 - **Skipped:** Docker on Shell/Android, Kolibri, ProtoMaps, CyberChef
 - **Next review:** 2026-06-20 (quarterly, or when they ship major features)
+
+---
+
+## leostera/agents
+
+- **URL:** https://github.com/leostera/agents
+- **License:** check repo
+- **What it is:** Rust typed agent toolkit. `SessionAgent<Input, Tools, Context, Output>` — fully typed agent interface. `evals` crate for trajectory-based testing (user/assistant turns graded by predicate or LLM judge). `cargo-evals` CLI. `codemode` for JS execution.
+- **Why we watch it:** Type-safe agent contracts for the SO9 droid personas. Trajectory evals = Exo's QA framework in Rust. `evals.toml` targets Ollama directly.
+- **Last reviewed:** 2026-03-20 (Aster)
+- **Pulled in:**
+  - `SessionAgent<I, Tools, Ctx, O>` type signature for SO9 archetypes
+  - Trajectory-based evals for soul quality testing (Theia onboarding, Exo QA)
+  - `evals.toml` with Ollama provider target
+  - `cargo evals run` pattern → `droid evals run` for build pipeline
+  - Mission Alignment scoring as eval predicate (FORGE integration)
+- **Skipped:** `codemode` (JS execution), direct LlmRunner replacement
+- **Integration point:** `agents` defines contracts, OpenClaw runs them, `evals` grades them
+- **Next review:** 2026-06-20
