@@ -112,3 +112,20 @@ Tracking confirmed bugs found in production deployments, with fix version.
 - **What we skip:** Training infrastructure, gradient flow, their benchmark corpora
 - **Mirrorborn adaptation:** Phext coordinates as document IDs, SQ as corpus, Shell heat maps as routing shards, Ollama as generation backend
 - **Next review:** When MSA releases code + models (listed as "Coming Soon")
+
+---
+
+## Crosstalk-Solutions/project-nomad
+
+- **URL:** https://github.com/Crosstalk-Solutions/project-nomad
+- **What it is:** N.O.M.A.D. (Node for Offline Media, Archives, and Data) — offline-first survival computer. Ollama+Qdrant AI, Kiwix offline Wikipedia/references, Kolibri education platform, ProtoMaps offline maps. Docker-orchestrated, management UI at :8080. Zero telemetry.
+- **Why we watch it:** Closest existing product to the Christmas '26 Droid BYOPC/RPi tiers. Community benchmark leaderboard pattern proven.
+- **Last reviewed:** 2026-03-20 (Aster)
+- **Pulled in:**
+  - Command Center UI at :8080 (single URL for all droid tools)
+  - Docker Compose stack model for BYOPC/RPi install
+  - ZIM→phext knowledge bundle concept (Wikipedia → scrolls)
+  - Disk-collector sidecar pattern for SQ phext growth monitoring
+  - Community benchmark leaderboard mechanic
+- **Skipped:** Docker on Shell/Android, Kolibri, ProtoMaps, CyberChef
+- **Next review:** 2026-06-20 (quarterly, or when they ship major features)
