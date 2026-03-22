@@ -35,15 +35,31 @@ fi
 success "gh auth OK"
 
 info "Fetching runner registration token..."
+
+# Try gh CLI first. If the token lacks Actions scope, fall back to prompting.
 REG_TOKEN=$(gh api \
     --method POST \
     -H "Accept: application/vnd.github+json" \
     "/repos/${REPO}/actions/runners/registration-token" \
-    --jq '.token')
+    --jq '.token' 2>/dev/null || true)
 
 if [[ -z "$REG_TOKEN" ]]; then
-    echo "ERROR: failed to get registration token" >&2
-    exit 1
+    warn "gh CLI token lacks 'Actions' write scope."
+    warn "Get a token manually:"
+    warn "  1. https://github.com/settings/tokens/new"
+    warn "  2. Check: repo > Actions (write) — OR use a fine-grained token with Actions: write"
+    warn "  3. Run:  gh auth refresh -s workflow,admin:repo_hook"
+    warn "     OR:   export GH_TOKEN=<your-token>"
+    warn ""
+    warn "Alternatively, get the token from:"
+    warn "  https://github.com/${REPO}/settings/actions/runners/new"
+    warn "  (copy the token shown in the config.sh --token line)"
+    echo ""
+    read -r -p "Paste your runner registration token: " REG_TOKEN
+    if [[ -z "$REG_TOKEN" ]]; then
+        echo "ERROR: no token provided" >&2
+        exit 1
+    fi
 fi
 success "Registration token acquired"
 
