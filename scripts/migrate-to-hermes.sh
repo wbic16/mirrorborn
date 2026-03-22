@@ -284,9 +284,11 @@ mkdir -p "$DST/phexts" "$DST/memories"
 
 # Phext files
 shopt -s nullglob
-phexts=("$SRC"/*.phext "$SRC"/phexts/*.phext 2>/dev/null)
+phexts=("$SRC"/*.phext)
+phexts_sub=("$SRC"/phexts/*.phext)
+all_phexts=("${phexts[@]}" "${phexts_sub[@]}")
 copied=0
-for f in "${phexts[@]}"; do
+for f in "${all_phexts[@]}"; do
     [[ -f "$f" ]] && cp -u "$f" "$DST/phexts/" && ((copied++)) || true
 done
 echo "  phexts: copied $copied file(s)"
