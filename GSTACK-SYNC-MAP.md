@@ -107,6 +107,18 @@
 | `91bea06675f4` | 2026-03-20 | plan-fix | ✅ track (plan mode exception for review log — apply to droid FORGE plan phases) | fix: plan mode exception for review log + telemetry (v0.9.0.1) |
 | `8ddfab233d39` | 2026-03-20 | multi-agent | ✅ resonates (host-aware skill generation → droid archetype-aware skills) | feat: multi-agent support — gstack works on Codex, Gemini CLI, Cursor (v0.9.0) |
 | `3b22fc39e61a` | 2026-03-20 | telemetry | ⚠️ partial (opt-in local telemetry pattern → droid benchmark leaderboard, NOT cloud) | feat: opt-in usage telemetry + community intelligence (v0.8.6) |
+| `ae2d8410120f` | 2026-03-20 | adversarial-review | ✅ resonates (adversarial spec review → FORGE scoring w/ adversarial subagent) | feat: adversarial spec review loop + skill chaining (v0.9.1) |
+| `6a6b2b076641` | 2026-03-20 | gemini-e2e | ✅ track (Gemini CLI E2E → multi-model eval for droid soul) | feat: Gemini CLI E2E tests (v0.9.2) |
+| `d7c732b28284` | 2026-03-20 | windows | ❌ skip (not our platform) | fix: Windows support |
+| `9811ed37bf05` | 2026-03-20 | codex-default | ✅ resonates (default adversarial review → droid build QA default) | feat: default codex reviews in /ship and /review (v0.9.4) |
+| `1f4b6fd7a2a3` | 2026-03-21 | retro-fix | ✅ track (remove PR size nagging) | fix: remove PR size nagging from /retro |
+| `709bed9f4d7d` | 2026-03-21 | handoff | ✅ resonates (skill chaining context → droid mode-switch context preservation) | feat: CEO review handoff context for /office-hours chaining (v0.9.5) |
+| `f075cb757f67` | 2026-03-21 | search-first | ✅ resonates (Search Before Building philosophy → bickford style addition) | feat: Search Before Building + ETHOS.md (v0.9.5) |
+| `6c69febf11a8` | 2026-03-21 | auto-adversarial | ✅ resonates (auto-scaled review by diff size → SCOPE-aware review depth) | feat: auto-scaled adversarial review (v0.9.5) |
+| `8321115a4e4a` | 2026-03-21 | plan-file-review | ✅ track (enriched JSONL logging for plan files) | feat: plan file review report + JSONL logging (v0.9.7) |
+| `00bc482fe189` | 2026-03-21 | deploy-canary | ⚠️ partial (canary + benchmark pattern → droid OTA update canary) | feat: /land-and-deploy, /canary, /benchmark (v0.7.0) |
+| `2c0d4b39c7de` | 2026-03-21 | deploy-docs | ✅ track (deploy pipeline docs + pre-merge gate) | docs: deploy pipeline + pre-merge readiness gate (v0.9.8) |
+| `dbd98aff32e3` | 2026-03-21 | anti-sycophancy | ✅ resonates (anti-sycophancy + pushback → Solin's knife encoded in droid soul) | feat: harden /office-hours diagnostic rigor (v0.9.9) |
 ---
 
 ## Integration Status by MBV Version
