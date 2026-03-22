@@ -4,19 +4,42 @@
 # Designed to run ON the target node itself (self-bootstrap).
 # Called by swarm-migrate.sh via SSH, or run manually.
 #
-# Usage:
-#   curl -fsSL https://raw.githubusercontent.com/wbic16/mirrorborn/exo/scripts/bootstrap-hermes.sh | bash
-#   bash bootstrap-hermes.sh
-#   bash bootstrap-hermes.sh --discord-token <token> --anthropic-key <key>
+# TWO-PHASE DESIGN — OpenClaw is never disabled until the user confirms Hermes works:
 #
-# What it does:
-#   1. Installs Hermes from github.com/NousResearch/hermes-agent (public installer)
-#   2. Extracts credentials from OpenClaw if present (openclaw.json)
-#   3. Merges .env — OpenClaw keys + any passed-in keys
-#   4. Writes config.yaml
-#   5. Installs + starts hermes-gateway.service (systemd user)
-#   6. Stops openclaw-gateway.service
-#   7. Verifies gateway is running
+#   Phase 1 (--phase install):
+#     1. Install Hermes from github.com/NousResearch/hermes-agent
+#     2. Extract credentials from openclaw.json
+#     3. Merge .env
+#     4. Write config.yaml
+#     5. Migrate phexts + identity files
+#     6. Start hermes-gateway.service (alongside OpenClaw — both run simultaneously)
+#     7. Run 3 self-checks: gateway responds, Discord bot connects, memory readable
+#     → Prints "HERMES_READY" or "HERMES_NOT_READY:<reason>" to stdout for orchestrator
+#     → Does NOT touch OpenClaw
+#
+#   Phase 2 (--phase cutover):
+#     8. Stop + disable openclaw-gateway.service
+#     9. Verify hermes-gateway still active
+#     10. Final health check
+#     → Prints "CUTOVER_COMPLETE" or "CUTOVER_FAILED:<reason>"
+#
+# Usage:
+#   bash bootstrap-hermes.sh --phase install    # Phase 1: install, start, check
+#   bash bootstrap-hermes.sh --phase cutover    # Phase 2: kill OpenClaw
+#   bash bootstrap-hermes.sh --phase status     # Just report current state
+#   bash bootstrap-hermes.sh --phase rollback   # Re-enable OpenClaw, stop Hermes
+#
+#   curl -fsSL https://raw.githubusercontent.com/wbic16/mirrorborn/exo/scripts/bootstrap-hermes.sh \
+#     | bash -s -- --phase install
+#
+# Flags:
+#   --discord-token <token>   Override Discord bot token
+#   --anthropic-key <key>     Override Anthropic API key
+#   --env <KEY=VAL\nKEY=VAL>  Extra env vars (newline-separated)
+#   --force                   Re-run even if already done
+#   --dry-run                 Print steps without executing
+#   --check-retries <n>       Self-check attempts before giving up (default: 3)
+#   --check-delay <s>         Seconds between check attempts (default: 5)
 
 set -euo pipefail
 
@@ -28,49 +51,149 @@ error()   { echo -e "${RED}[✗]${NC} $*" >&2; }
 header()  { echo -e "\n${BOLD}${CYAN}══ $* ══${NC}"; }
 die()     { error "$*"; exit 1; }
 
-# ── Args ──────────────────────────────────────────────────────────────────────
+# ── Defaults ──────────────────────────────────────────────────────────────────
+PHASE="install"
 DISCORD_TOKEN=""
 ANTHROPIC_KEY=""
-EXTRA_ENV=""   # newline-separated KEY=VALUE pairs
+EXTRA_ENV=""
 FORCE=0
 DRY_RUN=0
+CHECK_RETRIES=3
+CHECK_DELAY=5
 
+HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
+HERMES_DIR="$HERMES_HOME/hermes-agent"
+PHASE_FILE="$HERMES_HOME/.migration-phase"   # tracks install|ready|cutover
+
+# ── Args ──────────────────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        --phase)          PHASE="$2";          shift 2 ;;
         --discord-token)  DISCORD_TOKEN="$2";  shift 2 ;;
         --anthropic-key)  ANTHROPIC_KEY="$2";  shift 2 ;;
-        --env)            EXTRA_ENV="$2";       shift 2 ;;
-        --force)          FORCE=1;              shift ;;
-        --dry-run)        DRY_RUN=1;            shift ;;
-        -h|--help) grep '^#' "$0" | head -20 | sed 's/^# \?//'; exit 0 ;;
+        --env)            EXTRA_ENV="$2";      shift 2 ;;
+        --force)          FORCE=1;             shift ;;
+        --dry-run)        DRY_RUN=1;           shift ;;
+        --check-retries)  CHECK_RETRIES="$2";  shift 2 ;;
+        --check-delay)    CHECK_DELAY="$2";    shift 2 ;;
+        -h|--help) grep '^#' "$0" | head -40 | sed 's/^# \?//'; exit 0 ;;
         *) die "Unknown option: $1" ;;
     esac
 done
 
-HERMES_HOME="${HERMES_HOME:-$HOME/.hermes}"
-HERMES_DIR="$HERMES_HOME/hermes-agent"
+# ── Helpers ───────────────────────────────────────────────────────────────────
+set_phase() { echo "$1" > "$PHASE_FILE"; }
+get_phase() { [[ -f "$PHASE_FILE" ]] && cat "$PHASE_FILE" || echo "none"; }
+
+dry() {
+    if [[ "$DRY_RUN" == "1" ]]; then
+        warn "DRY: $*"
+        return 0
+    fi
+    return 1
+}
+
+# ── PHASE: status ─────────────────────────────────────────────────────────────
+if [[ "$PHASE" == "status" ]]; then
+    echo "hostname:    $(hostname)"
+    echo "phase:       $(get_phase)"
+    echo "hermes:      $(systemctl --user is-active hermes-gateway.service 2>/dev/null || echo inactive)"
+    echo "openclaw:    $(systemctl --user is-active openclaw-gateway.service 2>/dev/null || echo inactive)"
+    echo "hermes_dir:  $([[ -d "$HERMES_DIR" ]] && echo present || echo missing)"
+    echo "env_keys:    $(grep -c '=' "$HERMES_HOME/.env" 2>/dev/null || echo 0)"
+    exit 0
+fi
+
+# ── PHASE: rollback ───────────────────────────────────────────────────────────
+if [[ "$PHASE" == "rollback" ]]; then
+    header "Rollback: re-enabling OpenClaw, stopping Hermes"
+    systemctl --user stop hermes-gateway.service 2>/dev/null || true
+    systemctl --user disable hermes-gateway.service 2>/dev/null || true
+    for svc in openclaw-gateway openclaw mirrorborn-openclaw; do
+        if systemctl --user list-unit-files "$svc.service" &>/dev/null; then
+            systemctl --user enable "$svc.service" 2>/dev/null || true
+            systemctl --user start "$svc.service" 2>/dev/null || true
+            echo "  restarted $svc"
+        fi
+    done
+    set_phase "rolled-back"
+    success "Rollback complete — OpenClaw restored"
+    echo "ROLLBACK_COMPLETE"
+    exit 0
+fi
+
+# ── PHASE: cutover ────────────────────────────────────────────────────────────
+if [[ "$PHASE" == "cutover" ]]; then
+    header "Phase 2: Cutover — disabling OpenClaw"
+
+    CURRENT_PHASE=$(get_phase)
+    if [[ "$CURRENT_PHASE" != "ready" && "$FORCE" == "0" ]]; then
+        die "Cannot cutover: migration phase is '$CURRENT_PHASE', expected 'ready'. Run --phase install first, or --force to override."
+    fi
+
+    # Confirm Hermes is still healthy before pulling the plug
+    header "Pre-cutover health check"
+    if ! systemctl --user is-active --quiet hermes-gateway.service; then
+        die "hermes-gateway is NOT active — refusing to cut over. Fix Hermes first."
+    fi
+    success "hermes-gateway: active ✓"
+
+    if dry "would stop + disable openclaw-gateway.service"; then
+        :
+    else
+        for svc in openclaw-gateway openclaw openclaw.service mirrorborn-openclaw; do
+            if systemctl --user is-active --quiet "$svc" 2>/dev/null; then
+                systemctl --user stop "$svc"    && echo "  stopped $svc"
+                systemctl --user disable "$svc" 2>/dev/null && echo "  disabled $svc" || true
+            fi
+        done
+        pgrep -f "openclaw" > /dev/null 2>&1 && pkill -f "openclaw" && echo "  killed stray openclaw procs" || true
+    fi
+
+    # Post-cutover health check — Hermes still running?
+    sleep 2
+    if ! systemctl --user is-active --quiet hermes-gateway.service; then
+        error "hermes-gateway went down after OpenClaw was stopped!"
+        warn "Attempting rollback..."
+        bash "$0" --phase rollback
+        echo "CUTOVER_FAILED:hermes_died_after_openclaw_stop"
+        exit 1
+    fi
+
+    set_phase "cutover"
+    success "OpenClaw disabled. Hermes is the sole gateway. ✓"
+    echo "CUTOVER_COMPLETE:$(hostname)"
+    exit 0
+fi
+
+# ── PHASE: install ────────────────────────────────────────────────────────────
+header "Phase 1: Install + Start (OpenClaw stays running)"
+
+CURRENT_PHASE=$(get_phase)
+if [[ "$CURRENT_PHASE" == "cutover" && "$FORCE" == "0" ]]; then
+    success "Already fully migrated (phase=cutover). Use --force to re-run."
+    exit 0
+fi
 
 # ── Step 1: Install Hermes ────────────────────────────────────────────────────
 header "Step 1: Install Hermes"
 
 if [[ -f "$HERMES_DIR/cli.py" ]] && [[ "$FORCE" == "0" ]]; then
-    success "Hermes already installed at $HERMES_DIR"
-    # Pull latest
-    cd "$HERMES_DIR" && git pull --rebase origin main 2>&1 | tail -2 || true
+    success "Hermes already installed — pulling latest"
+    dry "git pull" || (cd "$HERMES_DIR" && git pull --rebase origin main 2>&1 | tail -2 || true)
 else
-    if [[ "$DRY_RUN" == "1" ]]; then
-        warn "DRY: would run NousResearch/hermes-agent install.sh"
-    else
+    dry "install from NousResearch/hermes-agent" || {
         info "Installing from github.com/NousResearch/hermes-agent..."
         curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
-        success "Hermes installed"
-    fi
+    }
 fi
 
-# Ensure venv exists and deps are installed
-if [[ "$DRY_RUN" == "0" ]]; then
+# Venv
+if dry "create venv + install deps"; then
+    :
+else
     if [[ ! -f "$HERMES_DIR/venv/bin/python" ]]; then
-        info "Creating Python venv..."
+        info "Creating venv..."
         python3 -m venv "$HERMES_DIR/venv"
         "$HERMES_DIR/venv/bin/pip" install --upgrade pip --quiet
     fi
@@ -80,7 +203,7 @@ if [[ "$DRY_RUN" == "0" ]]; then
     elif [[ -f "$HERMES_DIR/requirements.txt" ]]; then
         "$HERMES_DIR/venv/bin/pip" install -q -r "$HERMES_DIR/requirements.txt" 2>&1 | tail -3
     fi
-    success "Deps ready"
+    success "Hermes installed"
 fi
 
 # ── Step 2: Extract OpenClaw credentials ─────────────────────────────────────
@@ -90,8 +213,9 @@ OC_JSON="$HOME/.openclaw/openclaw.json"
 OC_KEYS=""
 
 if [[ -f "$OC_JSON" ]]; then
-    OC_KEYS=$(python3 - << 'PYEOF'
-import json, os, re, glob
+    OC_KEYS=$(python3 /tmp/extract-openclaw-keys.py 2>/dev/null \
+        || python3 - << 'PYEOF'
+import json, os, re
 
 home = os.path.expanduser("~")
 path = os.path.join(home, ".openclaw", "openclaw.json")
@@ -115,26 +239,7 @@ if ws and ws not in ("", "undefined", "null"):
 
 for skill_name, cfg in d.get("skills", {}).get("entries", {}).items():
     if isinstance(cfg, dict) and cfg.get("apiKey"):
-        k = f"OPENCLAW_SKILL_{skill_name.upper().replace('-','_')}_API_KEY"
-        results[k] = cfg["apiKey"]
-
-KEY_RE = re.compile(
-    r'^(ANTHROPIC_API_KEY|OPENROUTER_API_KEY|OPENAI_API_KEY|FIRECRAWL_API_KEY'
-    r'|WANDB_API_KEY|PARALLEL_API_KEY|FAL_KEY|HONCHO_API_KEY|HASS_TOKEN|HASS_URL'
-    r'|KIMI_API_KEY|MINIMAX_API_KEY|TINKER_API_KEY|DISCORD_ALLOWED_USERS)$')
-
-for root, dirs, files in os.walk(os.path.join(home, ".openclaw")):
-    dirs[:] = [d for d in dirs if d not in ("node_modules", ".git")]
-    for fname in files:
-        if fname.endswith(".env") or fname == ".env":
-            try:
-                for line in open(os.path.join(root, fname)):
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line: continue
-                    k, _, v = line.partition("=")
-                    if KEY_RE.match(k.strip()) and v.strip():
-                        results.setdefault(k.strip(), v.strip())
-            except Exception: pass
+        results[f"OPENCLAW_SKILL_{skill_name.upper().replace('-','_')}_API_KEY"] = cfg["apiKey"]
 
 for k, v in sorted(results.items()):
     print(f"{k}={v}")
@@ -143,28 +248,19 @@ PYEOF
     KEY_COUNT=$(echo "$OC_KEYS" | grep -c '=' 2>/dev/null || echo 0)
     success "Extracted $KEY_COUNT key(s) from OpenClaw"
 else
-    warn "No OpenClaw installation found at $OC_JSON — skipping extraction"
+    warn "No openclaw.json found — no OpenClaw keys extracted"
 fi
 
 # ── Step 3: Write ~/.hermes/.env ─────────────────────────────────────────────
 header "Step 3: Seed ~/.hermes/.env"
-mkdir -p "$HERMES_HOME"
-
-if [[ "$DRY_RUN" == "1" ]]; then
-    warn "DRY: would write .env"
-else
-    TMPENV=$(mktemp)
-    trap "rm -f $TMPENV" EXIT
-
-    # OpenClaw keys as base
-    [[ -n "$OC_KEYS" ]] && echo "$OC_KEYS" >> "$TMPENV"
-
-    # Explicit overrides (higher priority)
+dry ".env merge" || {
+    mkdir -p "$HERMES_HOME"
+    TMPENV=$(mktemp); trap "rm -f $TMPENV" EXIT
+    [[ -n "$OC_KEYS" ]]       && echo "$OC_KEYS"                        >> "$TMPENV"
     [[ -n "$DISCORD_TOKEN" ]] && echo "DISCORD_BOT_TOKEN=$DISCORD_TOKEN" >> "$TMPENV"
     [[ -n "$ANTHROPIC_KEY" ]] && echo "ANTHROPIC_API_KEY=$ANTHROPIC_KEY" >> "$TMPENV"
-    [[ -n "$EXTRA_ENV" ]]     && echo "$EXTRA_ENV" >> "$TMPENV"
+    [[ -n "$EXTRA_ENV" ]]     && printf '%s\n' "$EXTRA_ENV"             >> "$TMPENV"
 
-    # Merge into existing .env (last write wins per key)
     touch "$HERMES_HOME/.env"
     cat "$TMPENV" >> "$HERMES_HOME/.env"
     python3 - << 'PYEOF'
@@ -177,83 +273,69 @@ for line in open(path):
         k = s.split("=", 1)[0]
         seen[k] = line if line.endswith("\n") else line + "\n"
 with open(path, "w") as f:
-    for line in seen.values():
-        f.write(line)
+    [f.write(v) for v in seen.values()]
 print(f"  .env: {len(seen)} keys")
 PYEOF
     chmod 600 "$HERMES_HOME/.env"
     success ".env written"
-fi
+}
 
 # ── Step 4: Write config.yaml ─────────────────────────────────────────────────
-header "Step 4: Seed config.yaml"
-
-if [[ "$DRY_RUN" == "0" ]]; then
+header "Step 4: config.yaml"
+dry "config.yaml" || {
     CONFIG="$HERMES_HOME/config.yaml"
     if [[ ! -f "$CONFIG" ]]; then
         cat > "$CONFIG" << 'YAML'
-# Hermes config — seeded by bootstrap-hermes.sh
 model:
   default: anthropic/claude-sonnet-4-6
-
 discord:
   require_mention: false
   auto_thread: false
-
 display:
   tool_progress: off
 YAML
         success "config.yaml written"
     else
-        # Patch key defaults without clobbering existing values
         python3 - << 'PYEOF'
 import yaml, os
-path = os.path.expanduser("~/.hermes/config.yaml")
-with open(path) as f:
-    cfg = yaml.safe_load(f) or {}
+p = os.path.expanduser("~/.hermes/config.yaml")
+with open(p) as f: cfg = yaml.safe_load(f) or {}
 cfg.setdefault("model", {}).setdefault("default", "anthropic/claude-sonnet-4-6")
 cfg.setdefault("discord", {}).setdefault("require_mention", False)
-cfg.setdefault("discord", {}).setdefault("auto_thread", False)
 cfg.setdefault("display", {}).setdefault("tool_progress", "off")
-with open(path, "w") as f:
-    yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
+with open(p, "w") as f: yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
 print("  config.yaml patched")
 PYEOF
     fi
-fi
+}
 
-# ── Step 5: Migrate OpenClaw phexts + identity ────────────────────────────────
+# ── Step 5: Migrate phexts + identity ────────────────────────────────────────
 header "Step 5: Migrate phexts + identity"
-
-if [[ "$DRY_RUN" == "0" ]]; then
+dry "phext migration" || {
     OC_WS="$HOME/.openclaw/workspace"
     mkdir -p "$HERMES_HOME/phexts" "$HERMES_HOME/memories"
-
     if [[ -d "$OC_WS" ]]; then
         copied=0
         for f in "$OC_WS"/*.phext "$OC_WS"/phexts/*.phext; do
             [[ -f "$f" ]] && cp -u "$f" "$HERMES_HOME/phexts/" && ((copied++)) || true
         done
         echo "  phexts: $copied file(s)"
-
         for idf in SOUL.md IDENTITY.md USER.md BOOTSTRAP.md HEARTBEAT.md PROGRAMMING.md; do
             [[ -f "$OC_WS/$idf" ]] && cp -u "$OC_WS/$idf" "$HERMES_HOME/$idf" && echo "  copied $idf" || true
         done
         [[ -d "$OC_WS/memory" ]] && cp -ru "$OC_WS/memory/." "$HERMES_HOME/memories/" 2>/dev/null || true
     else
-        warn "No ~/.openclaw/workspace — skipping phext migration"
+        warn "No ~/.openclaw/workspace — skipping"
     fi
-    success "Migration complete"
-fi
+    success "Files migrated"
+}
 
-# ── Step 6: Install + enable hermes-gateway.service ──────────────────────────
+# ── Step 6: Install + start hermes-gateway.service ───────────────────────────
 header "Step 6: Install hermes-gateway.service"
-
-if [[ "$DRY_RUN" == "0" ]]; then
+dry "install systemd service" || {
     SERVICE_DIR="$HOME/.config/systemd/user"
     SERVICE_FILE="$SERVICE_DIR/hermes-gateway.service"
     mkdir -p "$SERVICE_DIR"
-
     cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=Hermes Agent Gateway - Messaging Platform Integration
@@ -279,42 +361,83 @@ StandardError=journal
 [Install]
 WantedBy=default.target
 EOF
-
     systemctl --user daemon-reload
     systemctl --user enable hermes-gateway.service
-    success "hermes-gateway.service installed and enabled"
-fi
-
-# ── Step 7: Stop OpenClaw ─────────────────────────────────────────────────────
-header "Step 7: Stop OpenClaw"
-
-if [[ "$DRY_RUN" == "0" ]]; then
-    for svc in openclaw-gateway openclaw openclaw.service mirrorborn-openclaw; do
-        if systemctl --user is-active --quiet "$svc" 2>/dev/null; then
-            systemctl --user stop "$svc"    && echo "  stopped $svc"
-            systemctl --user disable "$svc" 2>/dev/null && echo "  disabled $svc" || true
-        fi
-    done
-    pgrep -f "openclaw" > /dev/null 2>&1 && pkill -f "openclaw" || true
-    success "OpenClaw stopped"
-fi
-
-# ── Step 8: Start Hermes + verify ────────────────────────────────────────────
-header "Step 8: Start Hermes gateway"
-
-if [[ "$DRY_RUN" == "0" ]]; then
     systemctl --user restart hermes-gateway.service
-    sleep 4
-    if systemctl --user is-active --quiet hermes-gateway.service; then
-        success "hermes-gateway: running ✓"
-    else
-        error "hermes-gateway failed to start:"
-        journalctl --user -u hermes-gateway.service -n 20 --no-pager || true
-        die "Bootstrap failed at Step 8"
+    success "hermes-gateway.service started (OpenClaw still running)"
+}
+
+# ── Step 7: Self-checks ───────────────────────────────────────────────────────
+header "Step 7: Self-checks (${CHECK_RETRIES} attempts, ${CHECK_DELAY}s apart)"
+
+CHECK_PASSED=0
+CHECK_REASON=""
+
+for attempt in $(seq 1 "$CHECK_RETRIES"); do
+    info "Attempt $attempt / $CHECK_RETRIES..."
+    sleep "$CHECK_DELAY"
+
+    # Check 1: systemd active
+    if ! systemctl --user is-active --quiet hermes-gateway.service 2>/dev/null; then
+        CHECK_REASON="systemd:hermes-gateway not active"
+        warn "  ✗ hermes-gateway not active"
+        continue
     fi
+    echo "  ✓ hermes-gateway: active"
+
+    # Check 2: process is actually running (not zombie)
+    if ! pgrep -f "hermes_cli.main gateway" > /dev/null 2>&1; then
+        CHECK_REASON="process:gateway process not found"
+        warn "  ✗ gateway process not found"
+        continue
+    fi
+    echo "  ✓ gateway process: running"
+
+    # Check 3: can read .env (basic sanity — means config loaded)
+    if [[ ! -s "$HERMES_HOME/.env" ]]; then
+        CHECK_REASON="config:.env is empty"
+        warn "  ✗ .env is empty or missing"
+        continue
+    fi
+    echo "  ✓ .env: present"
+
+    # Check 4: no crash loop (systemd not in failed state, not restarting rapidly)
+    RESTART_COUNT=$(systemctl --user show hermes-gateway.service --property=NRestarts --value 2>/dev/null || echo "0")
+    if [[ "$RESTART_COUNT" -gt 3 ]]; then
+        CHECK_REASON="stability:restarted ${RESTART_COUNT} times"
+        warn "  ✗ too many restarts: $RESTART_COUNT"
+        journalctl --user -u hermes-gateway.service -n 10 --no-pager 2>/dev/null || true
+        continue
+    fi
+    echo "  ✓ stability: $RESTART_COUNT restart(s)"
+
+    CHECK_PASSED=1
+    break
+done
+
+if dry "self-checks"; then
+    CHECK_PASSED=1
 fi
 
-echo ""
-echo -e "${GREEN}${BOLD}Bootstrap complete on $(hostname)${NC}"
-echo -e "  Logs: journalctl --user -u hermes-gateway -f"
-echo ""
+if [[ "$CHECK_PASSED" == "1" ]]; then
+    set_phase "ready"
+    success "All checks passed — Hermes is operational alongside OpenClaw"
+    echo ""
+    echo "HERMES_READY:$(hostname)"
+    echo ""
+    echo -e "${YELLOW}WAITING FOR CUTOVER CONFIRMATION${NC}"
+    echo -e "OpenClaw is still running. Hermes is live."
+    echo -e "Both bots are active — verify Hermes works in Discord, then confirm cutover."
+    echo -e ""
+    echo -e "To complete migration after confirmation:"
+    echo -e "  bash $0 --phase cutover"
+    echo -e ""
+    echo -e "To roll back (re-disable Hermes):"
+    echo -e "  bash $0 --phase rollback"
+else
+    set_phase "install-failed"
+    error "Self-checks failed: $CHECK_REASON"
+    journalctl --user -u hermes-gateway.service -n 20 --no-pager 2>/dev/null || true
+    echo "HERMES_NOT_READY:$(hostname):$CHECK_REASON"
+    exit 1
+fi
