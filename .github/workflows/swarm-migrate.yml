@@ -1,0 +1,255 @@
+name: Migrate OpenClaw Swarm → Hermes
+
+on:
+  workflow_dispatch:
+    inputs:
+      nodes:
+        description: "Space-separated hostnames or 'all'"
+        required: false
+        default: "all"
+        type: string
+      dry_run:
+        description: "Dry run — show what would happen without making changes"
+        required: false
+        default: false
+        type: boolean
+      force:
+        description: "Re-run even if hermes-gateway already active"
+        required: false
+        default: false
+        type: boolean
+      use_openclaw_migrator:
+        description: "Run openclaw_to_hermes.py for full data migration (memories, skills, SOUL.md)"
+        required: false
+        default: true
+        type: boolean
+      tier:
+        description: "Connectivity tier — lan uses hostname.local, tailscale uses 100.x IPs"
+        required: false
+        default: "lan"
+        type: choice
+        options:
+          - lan
+          - tailscale
+
+jobs:
+  migrate:
+    name: Swarm Migration
+    runs-on: [self-hosted, best-willow]
+    timeout-minutes: 90
+
+    steps:
+      # ────────────────────────────────────────────────────────────
+      # 1. Checkout
+      # ────────────────────────────────────────────────────────────
+      - name: Checkout exo branch
+        uses: actions/checkout@v4
+        with:
+          ref: exo
+
+      # ────────────────────────────────────────────────────────────
+      # 2. Resolve target nodes
+      # ────────────────────────────────────────────────────────────
+      - name: Resolve target nodes
+        id: resolve
+        run: |
+          ALL_NODES="aurora-continuum halycon-vector logos-prime delta-wood aletheia-core ashfall-haven"
+
+          if [[ "${{ inputs.nodes }}" == "all" ]]; then
+            TARGETS="$ALL_NODES"
+          else
+            TARGETS="${{ inputs.nodes }}"
+          fi
+
+          echo "Resolved targets: $TARGETS"
+          echo "targets=$TARGETS" >> "$GITHUB_OUTPUT"
+
+      # ────────────────────────────────────────────────────────────
+      # 3. Verify SSH connectivity
+      # ────────────────────────────────────────────────────────────
+      - name: Verify SSH connectivity
+        id: connectivity
+        run: |
+          REACHABLE=""
+          UNREACHABLE=""
+
+          for node in ${{ steps.resolve.outputs.targets }}; do
+            if [[ "${{ inputs.tier }}" == "tailscale" ]]; then
+              # Source the IP map and resolve
+              IP=$(bash scripts/tailscale-ips.sh 2>/dev/null | awk -v h="$node" '$1 == h":" { print $2 }')
+              if [[ -z "$IP" ]]; then
+                echo "⚠️  $node — no Tailscale IP configured, skipping"
+                UNREACHABLE="$UNREACHABLE $node"
+                continue
+              fi
+              TARGET_ADDR="$IP"
+            else
+              TARGET_ADDR="${node}.local"
+            fi
+
+            echo -n "  → $node ($TARGET_ADDR) ... "
+            if ssh -o ConnectTimeout=8 \
+                   -o StrictHostKeyChecking=no \
+                   -o BatchMode=yes \
+                   "wbic16@${TARGET_ADDR}" "echo ok" &>/dev/null; then
+              echo "✓ reachable"
+              REACHABLE="$REACHABLE $node"
+            else
+              echo "✗ unreachable"
+              UNREACHABLE="$UNREACHABLE $node"
+            fi
+          done
+
+          REACHABLE="${REACHABLE# }"
+          UNREACHABLE="${UNREACHABLE# }"
+          echo "reachable=$REACHABLE"   >> "$GITHUB_OUTPUT"
+          echo "unreachable=$UNREACHABLE" >> "$GITHUB_OUTPUT"
+
+          echo ""
+          echo "Reachable   : ${REACHABLE:-<none>}"
+          echo "Unreachable : ${UNREACHABLE:-<none>}"
+
+      # ────────────────────────────────────────────────────────────
+      # 4. Run migration
+      # ────────────────────────────────────────────────────────────
+      - name: Run migration
+        id: migration
+        run: |
+          SUCCEEDED=""
+          FAILED=""
+          SKIPPED="${{ steps.connectivity.outputs.unreachable }}"
+
+          DRY_FLAG=""
+          FORCE_FLAG=""
+          [[ "${{ inputs.dry_run }}" == "true" ]]  && DRY_FLAG="--dry-run"
+          [[ "${{ inputs.force }}"   == "true" ]]  && FORCE_FLAG="--force"
+
+          for node in ${{ steps.connectivity.outputs.reachable }}; do
+            if [[ "${{ inputs.tier }}" == "tailscale" ]]; then
+              IP=$(bash scripts/tailscale-ips.sh 2>/dev/null | awk -v h="$node" '$1 == h":" { print $2 }')
+              TARGET_ADDR="$IP"
+            else
+              TARGET_ADDR="${node}.local"
+            fi
+
+            echo "━━━ Migrating $node ($TARGET_ADDR) ━━━"
+
+            # ── Step A: migrate-to-hermes.sh ──────────────────────
+            if bash scripts/migrate-to-hermes.sh \
+                  $DRY_FLAG $FORCE_FLAG \
+                  --target "wbic16@${TARGET_ADDR}" \
+                  --node "$node"; then
+              echo "  ✓ migrate-to-hermes.sh succeeded on $node"
+            else
+              echo "  ✗ migrate-to-hermes.sh FAILED on $node"
+              FAILED="$FAILED $node"
+              continue
+            fi
+
+            # ── Step B: openclaw_to_hermes.py (optional) ──────────
+            if [[ "${{ inputs.use_openclaw_migrator }}" == "true" && \
+                  "${{ inputs.dry_run }}" != "true" ]]; then
+              echo "  → Running openclaw_to_hermes.py on $node ..."
+              MIGRATOR_PATH="~/.hermes/hermes-agent/optional-skills/migration/openclaw-migration/scripts/openclaw_to_hermes.py"
+
+              if ssh -o StrictHostKeyChecking=no \
+                     "wbic16@${TARGET_ADDR}" \
+                     "python3 ${MIGRATOR_PATH} --execute --preset full --migrate-secrets --skill-conflict skip"; then
+                echo "  ✓ openclaw_to_hermes.py succeeded on $node"
+              else
+                echo "  ⚠️  openclaw_to_hermes.py failed on $node (migration base still applied)"
+                # Don't mark as FAILED — base migration succeeded
+              fi
+            fi
+
+            SUCCEEDED="$SUCCEEDED $node"
+          done
+
+          echo "succeeded=${SUCCEEDED# }" >> "$GITHUB_OUTPUT"
+          echo "failed=${FAILED# }"       >> "$GITHUB_OUTPUT"
+          echo "skipped=${SKIPPED# }"     >> "$GITHUB_OUTPUT"
+
+      # ────────────────────────────────────────────────────────────
+      # 5. Verify hermes-gateway on each migrated node
+      # ────────────────────────────────────────────────────────────
+      - name: Verify hermes-gateway
+        id: verify
+        run: |
+          VERIFIED=""
+          NOT_ACTIVE=""
+
+          for node in ${{ steps.migration.outputs.succeeded }}; do
+            if [[ "${{ inputs.tier }}" == "tailscale" ]]; then
+              IP=$(bash scripts/tailscale-ips.sh 2>/dev/null | awk -v h="$node" '$1 == h":" { print $2 }')
+              TARGET_ADDR="$IP"
+            else
+              TARGET_ADDR="${node}.local"
+            fi
+
+            echo -n "  → $node hermes-gateway status ... "
+            STATUS=$(ssh -o StrictHostKeyChecking=no \
+                         "wbic16@${TARGET_ADDR}" \
+                         "systemctl --user is-active hermes-gateway 2>/dev/null || echo inactive")
+
+            if [[ "$STATUS" == "active" ]]; then
+              echo "✓ active"
+              VERIFIED="$VERIFIED $node"
+            else
+              echo "✗ $STATUS"
+              NOT_ACTIVE="$NOT_ACTIVE $node"
+            fi
+          done
+
+          echo "verified=${VERIFIED# }"     >> "$GITHUB_OUTPUT"
+          echo "not_active=${NOT_ACTIVE# }" >> "$GITHUB_OUTPUT"
+
+      # ────────────────────────────────────────────────────────────
+      # 6. Summary
+      # ────────────────────────────────────────────────────────────
+      - name: Print summary
+        if: always()
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════╗"
+          echo "║          OpenClaw → Hermes Migration Summary         ║"
+          echo "╠══════════════════════════════════════════════════════╣"
+          printf "║  %-20s  %-10s  %-15s ║\n" "Node" "Migrated" "Gateway"
+          echo "╠══════════════════════════════════════════════════════╣"
+
+          ALL_TARGETS="${{ steps.resolve.outputs.targets }}"
+          SUCCEEDED="${{ steps.migration.outputs.succeeded }}"
+          FAILED="${{ steps.migration.outputs.failed }}"
+          SKIPPED="${{ steps.migration.outputs.skipped }}"
+          VERIFIED="${{ steps.verify.outputs.verified }}"
+
+          for node in $ALL_TARGETS; do
+            if echo "$SUCCEEDED" | grep -qw "$node"; then
+              MIG_STATUS="✓ done"
+            elif echo "$FAILED" | grep -qw "$node"; then
+              MIG_STATUS="✗ FAILED"
+            else
+              MIG_STATUS="— skipped"
+            fi
+
+            if echo "$VERIFIED" | grep -qw "$node"; then
+              GW_STATUS="✓ active"
+            elif echo "$FAILED $SKIPPED" | grep -qw "$node"; then
+              GW_STATUS="—"
+            else
+              GW_STATUS="✗ not active"
+            fi
+
+            printf "║  %-20s  %-10s  %-15s ║\n" "$node" "$MIG_STATUS" "$GW_STATUS"
+          done
+
+          echo "╚══════════════════════════════════════════════════════╝"
+
+          # Fail the job if any node failed
+          if [[ -n "$FAILED" ]]; then
+            echo ""
+            echo "❌ Migration failed on: $FAILED"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All reachable nodes migrated successfully."
