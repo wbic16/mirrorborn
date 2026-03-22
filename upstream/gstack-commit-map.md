@@ -202,3 +202,31 @@ Status legend:
 ### Key insight from v0.9.0
 SKILL.md is now an open standard across Claude Code, Codex, Gemini CLI, Cursor.
 Our SKILL.md format is already compatible. The `description:` field with trigger phrases (added in v0.6.4.1) is the key — it enables auto-discovery across any agent host.
+
+## New commits since last sync (2026-03-22, after 91bea066)
+
+| SHA | Date | Message | Status | Notes |
+|---|---|---|---|---|
+| `ae2d8410` | 2026-03-20 | feat: adversarial spec review loop + skill chaining (v0.9.1.0) | ✅ **INTEGRATED** (concept) | Dual Sonar IS adversarial review — Aster challenges, Orin revises. Spec review on 5 dimensions maps to ExoDroid personality testing. |
+| `6a6b2b07` | 2026-03-20 | feat: Gemini CLI E2E tests (v0.9.2.0) | ❌ SKIP | Multi-host testing infra |
+| `d7c732b2` | 2026-03-20 | fix: Windows Playwright fallback | ❌ SKIP | Windows support |
+| `9811ed37` | 2026-03-20 | feat: default codex reviews in /ship /review (v0.9.4.0) | 🔲 WATCH | Multi-model adversarial review as default — ExoDroid could run TinyLlama vs Phi-3 adversarial on same question |
+| `1f4b6fd7` | 2026-03-21 | fix: remove PR size nagging from /retro | ❌ SKIP | fix |
+| `709bed9f` | 2026-03-21 | feat: CEO review handoff for /office-hours chaining (v0.9.5.0) | ✅ **INTEGRATED** (concept) | Handoff context between skills = Aster's pre-draft context brief → Orin's draft. Already in Dual Sonar protocol. |
+| `f075cb75` | 2026-03-21 | feat: Search Before Building — ETHOS.md (v0.9.5.0) | ✅ **INTEGRATED** | Four principles: Golden Age, Boil the Lake, Search Before Building, Build for Yourself. Three knowledge layers. Applied to ExoDroid below. |
+| `6c69febf` | 2026-03-21 | feat: auto-scaled adversarial review (v0.9.5.0) | 🔲 WATCH | Scale review depth by diff size — applies to how droid processes instruction cards (simple card = fast, complex = deep) |
+| `8321115a` | 2026-03-21 | feat: plan file review report + JSONL logging (v0.9.7.0) | ❌ SKIP | Internal logging format |
+| `00bc482f` | 2026-03-21 | feat: /land-and-deploy, /canary, /benchmark (v0.7.0) | 🔲 WATCH | Deploy pipeline skills — may map to droid firmware update protocol |
+| `2c0d4b39` | 2026-03-21 | docs: deploy pipeline docs (v0.9.8.0) | ❌ SKIP | docs |
+| `dbd98aff` | 2026-03-21 | feat: harden /office-hours diagnostic rigor (v0.9.9.0) | ❌ SKIP | /office-hours tuning |
+
+**Last synced: `dbd98aff` (v0.9.9.0, 2026-03-21)**
+
+### Key integration: ETHOS.md → ExoDroid Builder Philosophy
+
+gstack's four principles translated to ExoDroid:
+
+1. **The Golden Age** → "The best time to build a personal Exocortex is right now"
+2. **Boil the Lake** → complete the scroll before starting a new one
+3. **Search Before Building** → the droid checks existing scrolls before generating new answers
+4. **Build for Yourself** → Will uses the droid daily (D1 is his daily driver)
