@@ -136,25 +136,30 @@ echo -e "${BOLD}${CYAN}══ Migration Summary ══${NC}"
 echo ""
 
 echo -e "  ${GREEN}Succeeded (${#SUCCEEDED[@]}):${NC}"
-for h in "${SUCCEEDED[@]:-}"; do
-    echo -e "    ${GREEN}✓${NC} ${NODE_NAMES[$h]:-$h} @ $h"
-done
-[[ ${#SUCCEEDED[@]} -eq 0 ]] && echo "    (none)"
+if [[ ${#SUCCEEDED[@]} -gt 0 ]]; then
+    for h in "${SUCCEEDED[@]}"; do echo -e "    ${GREEN}✓${NC} ${NODE_NAMES[$h]:-$h} @ $h"; done
+else
+    echo "    (none)"
+fi
 
 echo ""
 echo -e "  ${RED}Failed (${#FAILED[@]}):${NC}"
-for h in "${FAILED[@]:-}"; do
-    echo -e "    ${RED}✗${NC} ${NODE_NAMES[$h]:-$h} @ $h"
-    echo "      → ssh wbic16@${h}.local 'journalctl --user -u hermes-gateway -n 30 --no-pager'"
-done
-[[ ${#FAILED[@]} -eq 0 ]] && echo "    (none)"
+if [[ ${#FAILED[@]} -gt 0 ]]; then
+    for h in "${FAILED[@]}"; do
+        echo -e "    ${RED}✗${NC} ${NODE_NAMES[$h]:-$h} @ $h"
+        echo "      → ssh wbic16@${h}.local 'journalctl --user -u hermes-gateway -n 30 --no-pager'"
+    done
+else
+    echo "    (none)"
+fi
 
 echo ""
 echo -e "  ${YELLOW}Skipped (${#SKIPPED[@]}):${NC}"
-for entry in "${SKIPPED[@]:-}"; do
-    echo -e "    ${YELLOW}–${NC} $entry"
-done
-[[ ${#SKIPPED[@]} -eq 0 ]] && echo "    (none)"
+if [[ ${#SKIPPED[@]} -gt 0 ]]; then
+    for entry in "${SKIPPED[@]}"; do echo -e "    ${YELLOW}–${NC} $entry"; done
+else
+    echo "    (none)"
+fi
 
 echo ""
 
