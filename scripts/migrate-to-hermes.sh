@@ -1,28 +1,36 @@
 #!/usr/bin/env bash
-# migrate-to-hermes.sh — Live OpenClaw → Hermes migration for one Mirrorborn node
+# migrate-to-hermes.sh — Live OpenClaw → Hermes migration for one node
 #
-# Designed to run entirely from elven-path (or any already-migrated node)
-# with only SSH access. No Tailscale, no phone app, no terminal required.
-# Invocable from Discord: "orin, migrate aurora-continuum"
+# Works in two modes:
+#   SHELL MODE  (default) — run from an already-migrated Mirrorborn node
+#               that has hermes-agent locally and shares API keys via .env
+#   STANDALONE MODE (--standalone) — run locally by any OpenClaw user on
+#               the Web; installs hermes-agent from PyPI/GitHub directly,
+#               no source node needed, keys come entirely from OpenClaw
 #
 # Usage:
-#   ./migrate-to-hermes.sh <hostname>             # e.g. aurora-continuum
-#   ./migrate-to-hermes.sh <hostname> --dry-run   # print steps without executing
-#   ./migrate-to-hermes.sh <hostname> --force     # re-run even if Hermes already active
+#   ./migrate-to-hermes.sh <hostname>                    # Shell mode
+#   ./migrate-to-hermes.sh <hostname> --dry-run          # Print steps, no exec
+#   ./migrate-to-hermes.sh <hostname> --force            # Re-run if Hermes active
+#   ./migrate-to-hermes.sh <hostname> --user <username>  # Override remote username
+#   ./migrate-to-hermes.sh <hostname> --no-mdns          # Use plain hostname (not .local)
+#   ./migrate-to-hermes.sh <hostname> --standalone       # Standalone mode (no source node)
+#   ./migrate-to-hermes.sh localhost --standalone        # Migrate the local machine
 #
 # What it does:
-#   1. rsync hermes-agent from elven-path → target node
+#   1. Install hermes-agent on target (rsync from source node, or pip install)
 #   2. Create Python venv + install deps on target
 #   3. Extract API keys from OpenClaw on target (extract-openclaw-keys.py)
-#   4. Seed ~/.hermes/.env — per-node Discord token from OpenClaw, shared keys from elven-path
-#   5. Seed ~/.hermes/config.yaml with Mirrorborn defaults
+#   4. Seed ~/.hermes/.env (from OpenClaw keys + shared keys in shell mode)
+#   5. Seed ~/.hermes/config.yaml with sane defaults
+#      - Fixes DISCORD_HOME_CHANNEL from DISCORD_HOME_CHANNEL_ID if needed
 #   6. Migrate phext files and identity (SOUL.md etc.) from ~/.openclaw/workspace
 #   7. Install + enable hermes-gateway.service (systemd user)
 #   8. Stop + disable openclaw-gateway.service
 #   9. Start hermes-gateway and verify
 #
 # Preserves: all phext files, SOUL.md, openclaw binary (not removed)
-# Requires:  SSH key access to target, Python 3.11+, rsync
+# Requires:  SSH key access to target (or localhost), Python 3.11+, rsync
 
 set -euo pipefail
 
@@ -38,23 +46,41 @@ die()     { error "$*"; exit 1; }
 TARGET_HOST=""
 DRY_RUN=0
 FORCE=0
-REMOTE_USER="wbic16"
-SOURCE_NODE="elven-path"   # the already-migrated node we rsync hermes-agent from
+STANDALONE=0
+USE_MDNS=1                        # append .local by default (shell/LAN mode)
+REMOTE_USER="${USER:-$(whoami)}"  # default to current user, not hardcoded
+SOURCE_NODE="elven-path"          # only used in shell mode
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --dry-run) DRY_RUN=1; shift ;;
-        --force)   FORCE=1;   shift ;;
-        --user)    REMOTE_USER="$2"; shift 2 ;;
-        --source)  SOURCE_NODE="$2"; shift 2 ;;
-        -h|--help) grep '^#' "$0" | head -30 | sed 's/^# \?//'; exit 0 ;;
-        -*)        die "Unknown option: $1" ;;
-        *)         TARGET_HOST="$1"; shift ;;
+        --dry-run)   DRY_RUN=1;    shift ;;
+        --force)     FORCE=1;      shift ;;
+        --standalone) STANDALONE=1; shift ;;
+        --no-mdns)   USE_MDNS=0;   shift ;;
+        --user)      REMOTE_USER="$2"; shift 2 ;;
+        --source)    SOURCE_NODE="$2"; shift 2 ;;
+        -h|--help)   grep '^#' "$0" | head -35 | sed 's/^# \?//'; exit 0 ;;
+        -*)          die "Unknown option: $1" ;;
+        *)           TARGET_HOST="$1"; shift ;;
     esac
 done
 
-[[ -z "$TARGET_HOST" ]] && die "No target host specified. Usage: $0 <hostname>"
-[[ "$TARGET_HOST" == "$SOURCE_NODE" ]] && die "Target and source are the same node ($TARGET_HOST) — nothing to do."
+[[ -z "$TARGET_HOST" ]] && die "No target host specified. Usage: $0 <hostname> [--standalone]"
+
+# Build the SSH target address
+# localhost/127.x never gets .local suffix; others only get it in mDNS mode
+_is_local=0
+if [[ "$TARGET_HOST" == "localhost" || "$TARGET_HOST" =~ ^127\. || "$TARGET_HOST" =~ ^:: ]]; then
+    _is_local=1
+    SSH_TARGET="localhost"
+elif [[ "$USE_MDNS" == "1" ]]; then
+    SSH_TARGET="${TARGET_HOST}.local"
+else
+    SSH_TARGET="$TARGET_HOST"
+fi
+
+[[ "$_is_local" == "0" && "$STANDALONE" == "0" && "$TARGET_HOST" == "$SOURCE_NODE" ]] \
+    && die "Target and source are the same node ($TARGET_HOST) — nothing to do."
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -63,65 +89,112 @@ EXTRACT_SCRIPT="$SCRIPT_DIR/extract-openclaw-keys.py"
 
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes"
 
+# For localhost, skip SSH and run directly
+_ssh() {
+    if [[ "$_is_local" == "1" ]]; then
+        bash -c "$*"
+    else
+        ssh $SSH_OPTS "${REMOTE_USER}@${SSH_TARGET}" "$@"
+    fi
+}
+
 remote() {
     local desc="$1"; shift
     info "[$TARGET_HOST] $desc"
     [[ "$DRY_RUN" == "1" ]] && { echo -e "  ${YELLOW}DRY:${NC} $*"; return 0; }
-    ssh $SSH_OPTS "${REMOTE_USER}@${TARGET_HOST}.local" "$@"
+    if [[ "$_is_local" == "1" ]]; then
+        bash -c "$*"
+    else
+        ssh $SSH_OPTS "${REMOTE_USER}@${SSH_TARGET}" "$@"
+    fi
 }
 
 remote_script() {
-    # Run a heredoc script on the remote via stdin
     local desc="$1"; shift
     info "[$TARGET_HOST] $desc"
     [[ "$DRY_RUN" == "1" ]] && { echo -e "  ${YELLOW}DRY:${NC} (script block)"; cat; return 0; }
-    ssh $SSH_OPTS "${REMOTE_USER}@${TARGET_HOST}.local" bash -s "$@"
+    if [[ "$_is_local" == "1" ]]; then
+        bash -s "$@"
+    else
+        ssh $SSH_OPTS "${REMOTE_USER}@${SSH_TARGET}" bash -s "$@"
+    fi
+}
+
+_scp() {
+    local src="$1" dst="$2"
+    if [[ "$_is_local" == "1" ]]; then
+        cp "$src" "$dst"
+    else
+        scp $SSH_OPTS "$src" "${REMOTE_USER}@${SSH_TARGET}:${dst}" > /dev/null
+    fi
 }
 
 # ── Connectivity check ────────────────────────────────────────────────────────
 header "Preflight: $TARGET_HOST"
 
-if [[ "$DRY_RUN" == "0" ]]; then
-    ssh $SSH_OPTS "${REMOTE_USER}@${TARGET_HOST}.local" "echo connected" > /dev/null 2>&1 \
-        || die "Cannot reach ${REMOTE_USER}@${TARGET_HOST}.local via SSH"
+if [[ "$DRY_RUN" == "0" && "$_is_local" == "0" ]]; then
+    ssh $SSH_OPTS "${REMOTE_USER}@${SSH_TARGET}" "echo connected" > /dev/null 2>&1 \
+        || die "Cannot reach ${REMOTE_USER}@${SSH_TARGET} via SSH"
     success "SSH OK"
+elif [[ "$_is_local" == "1" ]]; then
+    success "Local machine — no SSH needed"
 fi
 
 # Check if already migrated
 if [[ "$FORCE" == "0" && "$DRY_RUN" == "0" ]]; then
-    if ssh $SSH_OPTS "${REMOTE_USER}@${TARGET_HOST}.local" \
+    if remote "check hermes-gateway status" \
         "systemctl --user is-active hermes-gateway.service" > /dev/null 2>&1; then
         success "hermes-gateway already active on $TARGET_HOST — skipping (use --force to re-run)"
         exit 0
     fi
 fi
 
-# ── Step 1: rsync hermes-agent from source node ───────────────────────────────
-header "Step 1: rsync hermes-agent → $TARGET_HOST"
+# ── Step 1: Install hermes-agent on target ────────────────────────────────────
+header "Step 1: Install hermes-agent → $TARGET_HOST"
 
-HERMES_SRC="${REMOTE_USER}@${SOURCE_NODE}.local:/home/${REMOTE_USER}/.hermes/hermes-agent/"
-HERMES_DST="/home/${REMOTE_USER}/.hermes/hermes-agent/"
+if [[ "$STANDALONE" == "1" ]]; then
+    # Standalone mode: install from PyPI (or pip install from GitHub if not published)
+    remote_script "Install hermes-agent via pip" << 'REMOTE'
+set -euo pipefail
+HERMES_DIR="$HOME/.hermes/hermes-agent"
+mkdir -p "$HOME/.hermes"
 
-if [[ "$DRY_RUN" == "1" ]]; then
-    warn "DRY: rsync -az --delete $HERMES_SRC $TARGET_HOST:$HERMES_DST"
+# Try PyPI first, fall back to GitHub
+if python3 -m pip show hermes-agent > /dev/null 2>&1; then
+    echo "  hermes-agent already installed system-wide"
+elif [[ -d "$HERMES_DIR" ]]; then
+    echo "  hermes-agent directory already present"
 else
-    # Run rsync FROM the target pulling from source, via SSH jump — or push from here
-    # We're on elven-path, so push directly:
-    rsync -az --delete \
-        --exclude 'venv/' \
-        --exclude '__pycache__/' \
-        --exclude '*.pyc' \
-        --exclude '.git/' \
-        --exclude 'node_modules/' \
-        -e "ssh $SSH_OPTS" \
-        "/home/${REMOTE_USER}/.hermes/hermes-agent/" \
-        "${REMOTE_USER}@${TARGET_HOST}.local:${HERMES_DST}" \
-        && success "hermes-agent synced to $TARGET_HOST" \
-        || die "rsync failed"
+    echo "  Cloning hermes-agent from GitHub..."
+    git clone --depth=1 https://github.com/inference-sh/hermes-agent.git "$HERMES_DIR" 2>&1 | tail -3 \
+        || { echo "  git clone failed — trying pip..."; python3 -m pip install --user hermes-agent 2>&1 | tail -3; }
+fi
+REMOTE
 
-    # Also copy the extract script to the node
-    scp $SSH_OPTS "$EXTRACT_SCRIPT" \
-        "${REMOTE_USER}@${TARGET_HOST}.local:/tmp/extract-openclaw-keys.py" > /dev/null
+else
+    # Shell mode: rsync from source node
+    HERMES_DST="/home/${REMOTE_USER}/.hermes/hermes-agent/"
+
+    if [[ "$DRY_RUN" == "1" ]]; then
+        warn "DRY: rsync from ${SOURCE_NODE} → ${SSH_TARGET}:${HERMES_DST}"
+    else
+        rsync -az --delete \
+            --exclude 'venv/' \
+            --exclude '__pycache__/' \
+            --exclude '*.pyc' \
+            --exclude '.git/' \
+            --exclude 'node_modules/' \
+            -e "ssh $SSH_OPTS" \
+            "/home/${REMOTE_USER}/.hermes/hermes-agent/" \
+            "${REMOTE_USER}@${SSH_TARGET}:${HERMES_DST}" \
+            && success "hermes-agent synced to $TARGET_HOST" \
+            || die "rsync failed"
+    fi
+fi
+
+# Always copy the extract script
+if [[ "$DRY_RUN" == "0" ]]; then
+    _scp "$EXTRACT_SCRIPT" "/tmp/extract-openclaw-keys.py"
 fi
 
 # ── Step 2: Create venv + install deps ───────────────────────────────────────
@@ -130,6 +203,11 @@ header "Step 2: Python venv + dependencies"
 remote_script "Create venv and install deps" << 'REMOTE'
 set -euo pipefail
 HERMES_DIR="$HOME/.hermes/hermes-agent"
+
+if [[ ! -d "$HERMES_DIR" ]]; then
+    echo "  hermes-agent not found at $HERMES_DIR — was Step 1 successful?"
+    exit 1
+fi
 
 if [[ ! -f "$HERMES_DIR/venv/bin/python" ]] || [[ ! -f "$HERMES_DIR/venv/bin/pip" ]]; then
     [[ -d "$HERMES_DIR/venv" ]] && rm -rf "$HERMES_DIR/venv"
@@ -153,7 +231,7 @@ REMOTE
 header "Step 3: Extract OpenClaw API keys"
 
 if [[ "$DRY_RUN" == "0" ]]; then
-    OC_KEYS=$(ssh $SSH_OPTS "${REMOTE_USER}@${TARGET_HOST}.local" \
+    OC_KEYS=$(remote "run extract-openclaw-keys.py" \
         "python3 /tmp/extract-openclaw-keys.py 2>/dev/null" || true)
     if [[ -z "$OC_KEYS" ]]; then
         warn "No keys extracted from OpenClaw on $TARGET_HOST"
@@ -169,48 +247,47 @@ fi
 # ── Step 4: Seed ~/.hermes/.env ───────────────────────────────────────────────
 header "Step 4: Seed ~/.hermes/.env"
 
-# Build the .env:
-# - Start with elven-path's .env (shared keys: Anthropic, Firecrawl, etc.)
-# - Overlay with per-node keys from OpenClaw (Discord token must be per-node)
-# - DISCORD_BOT_TOKEN from OpenClaw takes precedence over elven-path's token
-ENV_SOURCE="$HOME/.hermes/.env"
-[[ -f "$ENV_SOURCE" ]] || die "Source .env not found at $ENV_SOURCE"
-
 if [[ "$DRY_RUN" == "1" ]]; then
     warn "DRY: would write merged .env to $TARGET_HOST:~/.hermes/.env"
 else
-    # Build merged env in a temp file — never touches shell history
     TMPENV=$(mktemp)
     trap "rm -f $TMPENV" EXIT
 
-    # Base: shared keys from elven-path (skip DISCORD_BOT_TOKEN — will come from OpenClaw)
-    grep -v '^DISCORD_BOT_TOKEN=' "$ENV_SOURCE" > "$TMPENV" 2>/dev/null || true
+    if [[ "$STANDALONE" == "0" ]]; then
+        # Shell mode: start with runner's shared keys, skip DISCORD_BOT_TOKEN
+        ENV_SOURCE="$HOME/.hermes/.env"
+        if [[ -f "$ENV_SOURCE" ]]; then
+            grep -v '^DISCORD_BOT_TOKEN=' "$ENV_SOURCE" > "$TMPENV" 2>/dev/null || true
+        else
+            warn "No shared .env found at $ENV_SOURCE — using only OpenClaw keys"
+        fi
+    fi
+    # (standalone: TMPENV starts empty; all keys come from OpenClaw)
 
-    # Overlay: per-node keys from OpenClaw (DISCORD_BOT_TOKEN, BRAVE_SEARCH_API_KEY, etc.)
+    # Overlay per-node keys from OpenClaw
     if [[ -n "$OC_KEYS" ]]; then
         echo "$OC_KEYS" >> "$TMPENV"
     fi
 
-    # Push to remote, dedup by key (last wins — OpenClaw overlay takes effect)
-    ssh $SSH_OPTS "${REMOTE_USER}@${TARGET_HOST}.local" 'mkdir -p ~/.hermes' < /dev/null
-    scp $SSH_OPTS "$TMPENV" "${REMOTE_USER}@${TARGET_HOST}.local:/tmp/hermes_env_new" > /dev/null
+    remote "ensure ~/.hermes exists" "mkdir -p ~/.hermes"
+    _scp "$TMPENV" "/tmp/hermes_env_new"
 
-    # On remote: merge with any existing .env, deduplicate (last-write-wins per key)
+    # On remote: append + deduplicate (last-write-wins per key)
     remote "Merge and deduplicate .env" '
         mkdir -p ~/.hermes
         cat /tmp/hermes_env_new >> ~/.hermes/.env
-        # Deduplicate: keep last occurrence of each key
         python3 -c "
-import sys
+import os
+path = os.path.expanduser('"'"'~/.hermes/.env'"'"')
 seen = {}
-lines = open(\"$HOME/.hermes/.env\").readlines()
-for line in lines:
-    k = line.split(\"=\", 1)[0].strip()
-    seen[k] = line
-with open(\"$HOME/.hermes/.env\", \"w\") as f:
+for line in open(path).readlines():
+    k = line.split('"'"'='"'"', 1)[0].strip()
+    if k:
+        seen[k] = line
+with open(path, '"'"'w'"'"') as f:
     for line in seen.values():
-        f.write(line if line.endswith(\"\\n\") else line + \"\\n\")
-print(f\"  .env: {len(seen)} keys\")
+        f.write(line if line.endswith('"'"'\n'"'"') else line + '"'"'\n'"'"')
+print(f'"'"'  .env: {len(seen)} keys'"'"')
 "
         rm -f /tmp/hermes_env_new
     '
@@ -220,12 +297,16 @@ fi
 # ── Step 5: Seed config.yaml ──────────────────────────────────────────────────
 header "Step 5: Seed ~/.hermes/config.yaml"
 
-# Get node name from hostmap
+# Get node name from hostmap (gracefully handle missing hostmap for standalone)
 NODE_NAME=$(python3 -c "
-import json
-nodes = json.load(open('$REPO_ROOT/hostmap.json'))['nodes']
-match = [n for n in nodes if n['hostname'] == '$TARGET_HOST']
-print(match[0]['name'] if match else '$TARGET_HOST')
+import json, os
+hmap = '$REPO_ROOT/hostmap.json'
+if os.path.exists(hmap):
+    nodes = json.load(open(hmap)).get('nodes', [])
+    match = [n for n in nodes if n.get('hostname') == '$TARGET_HOST']
+    print(match[0]['name'] if match else '$TARGET_HOST')
+else:
+    print('$TARGET_HOST')
 " 2>/dev/null || echo "$TARGET_HOST")
 
 remote_script "Write config.yaml" << REMOTE
@@ -250,6 +331,23 @@ display.setdefault("tool_progress", "off")
 
 model = cfg.setdefault("model", {})
 model.setdefault("default", "anthropic/claude-sonnet-4-6")
+
+# Fix: openclaw extract writes DISCORD_HOME_CHANNEL_ID but the gateway
+# reads DISCORD_HOME_CHANNEL — copy the value under the correct key.
+env_path = os.path.expanduser("~/.hermes/.env")
+if os.path.exists(env_path):
+    env_vars = {}
+    for line in open(env_path):
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, _, v = line.partition("=")
+            env_vars[k.strip()] = v.strip()
+    ch_id = env_vars.get("DISCORD_HOME_CHANNEL_ID", "")
+    if ch_id and not env_vars.get("DISCORD_HOME_CHANNEL", ""):
+        # Append correct key to .env
+        with open(env_path, "a") as f:
+            f.write(f"\nDISCORD_HOME_CHANNEL={ch_id}\n")
+        print(f"  fixed: DISCORD_HOME_CHANNEL={ch_id}")
 
 with open(path, "w") as f:
     yaml.dump(cfg, f, default_flow_style=False, allow_unicode=True)
@@ -282,24 +380,28 @@ SRC="$HOME/.openclaw/workspace"
 DST="$HOME/.hermes"
 mkdir -p "$DST/phexts" "$DST/memories"
 
-# Phext files
-shopt -s nullglob
-phexts=("$SRC"/*.phext)
-phexts_sub=("$SRC"/phexts/*.phext)
-all_phexts=("${phexts[@]}" "${phexts_sub[@]}")
-copied=0
-for f in "${all_phexts[@]}"; do
-    [[ -f "$f" ]] && cp -u "$f" "$DST/phexts/" && ((copied++)) || true
-done
-echo "  phexts: copied $copied file(s)"
+if [[ ! -d "$SRC" ]]; then
+    echo "  No ~/.openclaw/workspace found — skipping phext/identity migration"
+else
+    # Phext files
+    shopt -s nullglob
+    phexts=("$SRC"/*.phext)
+    phexts_sub=("$SRC"/phexts/*.phext)
+    all_phexts=("${phexts[@]}" "${phexts_sub[@]}")
+    copied=0
+    for f in "${all_phexts[@]}"; do
+        [[ -f "$f" ]] && cp -u "$f" "$DST/phexts/" && ((copied++)) || true
+    done
+    echo "  phexts: copied $copied file(s)"
 
-# Identity files
-for f in SOUL.md IDENTITY.md USER.md BOOTSTRAP.md HEARTBEAT.md PROGRAMMING.md; do
-    [[ -f "$SRC/$f" ]] && cp -u "$SRC/$f" "$DST/$f" && echo "  copied $f" || true
-done
+    # Identity files
+    for f in SOUL.md IDENTITY.md USER.md BOOTSTRAP.md HEARTBEAT.md PROGRAMMING.md; do
+        [[ -f "$SRC/$f" ]] && cp -u "$SRC/$f" "$DST/$f" && echo "  copied $f" || true
+    done
 
-# Memory dir
-[[ -d "$SRC/memory" ]] && cp -ru "$SRC/memory/." "$DST/memories/" 2>/dev/null && echo "  copied memory/" || true
+    # Memory dir
+    [[ -d "$SRC/memory" ]] && cp -ru "$SRC/memory/." "$DST/memories/" 2>/dev/null && echo "  copied memory/" || true
+fi
 REMOTE
 
 # ── Step 7: Install hermes-gateway.service ────────────────────────────────────
@@ -359,6 +461,10 @@ for svc in openclaw-gateway openclaw openclaw.service mirrorborn-openclaw; do
         systemctl --user disable "$svc" && echo "  disabled $svc" || true
     fi
 done
+# Remove any auto-start symlinks left behind
+for f in "$HOME/.config/systemd/user/default.target.wants"/openclaw*.service; do
+    [[ -L "$f" ]] && rm -f "$f" && echo "  removed symlink: $(basename $f)"
+done
 pgrep -f "openclaw" > /dev/null 2>&1 && pkill -f "openclaw" && echo "  killed stray openclaw procs" || true
 echo "  OpenClaw stopped"
 REMOTE
@@ -383,5 +489,9 @@ REMOTE
 echo ""
 echo -e "${GREEN}${BOLD}✓ Migration complete: ${TARGET_HOST}${NC}"
 echo ""
-echo -e "  Gateway logs:  ssh ${REMOTE_USER}@${TARGET_HOST}.local 'journalctl --user -u hermes-gateway -f'"
+if [[ "$_is_local" == "1" ]]; then
+    echo -e "  Gateway logs:  journalctl --user -u hermes-gateway -f"
+else
+    echo -e "  Gateway logs:  ssh ${REMOTE_USER}@${SSH_TARGET} 'journalctl --user -u hermes-gateway -f'"
+fi
 echo ""
