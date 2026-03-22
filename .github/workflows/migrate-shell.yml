@@ -1,0 +1,117 @@
+name: Migrate Shell of Nine → Hermes
+
+on:
+  workflow_dispatch:
+    inputs:
+      nodes:
+        description: 'Nodes to migrate (space-separated hostnames, or "all")'
+        required: true
+        default: 'all'
+      dry_run:
+        description: 'Dry run — print steps without executing'
+        type: boolean
+        default: false
+      force_reinstall:
+        description: 'Force Hermes reinstall even if already present'
+        type: boolean
+        default: false
+      skip_openclaw_stop:
+        description: 'Skip stopping OpenClaw (useful for rollback testing)'
+        type: boolean
+        default: false
+
+jobs:
+  migrate:
+    name: Migrate nodes
+    runs-on: [self-hosted, best-willow]
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout mirrorborn
+        uses: actions/checkout@v4
+        with:
+          ref: exo
+
+      - name: Resolve target nodes
+        id: nodes
+        run: |
+          ALL_NODES="aurora-continuum halycon-vector logos-prime delta-wood aletheia-core ashfall-haven"
+          # elven-path (Orin) already migrated — skip by default
+          INPUT="${{ github.event.inputs.nodes }}"
+          if [[ "$INPUT" == "all" ]]; then
+            TARGETS="$ALL_NODES"
+          else
+            TARGETS="$INPUT"
+          fi
+          echo "targets=$TARGETS" >> "$GITHUB_OUTPUT"
+          echo "Targets: $TARGETS"
+
+      - name: Verify SSH connectivity
+        run: |
+          FAILED=()
+          for host in ${{ steps.nodes.outputs.targets }}; do
+            if ssh -o ConnectTimeout=8 -o StrictHostKeyChecking=no wbic16@$host "echo ok" &>/dev/null; then
+              echo "✓ $host reachable"
+            else
+              echo "✗ $host UNREACHABLE"
+              FAILED+=("$host")
+            fi
+          done
+          if [[ ${#FAILED[@]} -gt 0 ]]; then
+            echo "ERROR: unreachable nodes: ${FAILED[*]}"
+            exit 1
+          fi
+
+      - name: Run migration on each node
+        run: |
+          SCRIPT_DIR="${GITHUB_WORKSPACE}/scripts"
+          DRY_FLAG=""
+          [[ "${{ github.event.inputs.dry_run }}" == "true" ]] && DRY_FLAG="--dry-run"
+          FORCE_FLAG=""
+          [[ "${{ github.event.inputs.force_reinstall }}" == "true" ]] && FORCE_FLAG="--force-reinstall"
+          SKIP_OC_FLAG=""
+          [[ "${{ github.event.inputs.skip_openclaw_stop }}" == "true" ]] && SKIP_OC_FLAG="--skip-openclaw-stop"
+
+          FAILED=()
+          SUCCEEDED=()
+
+          for host in ${{ steps.nodes.outputs.targets }}; do
+            echo ""
+            echo "════════════════════════════════════════════"
+            echo "  Migrating: $host"
+            echo "════════════════════════════════════════════"
+
+            if bash "$SCRIPT_DIR/migrate-to-hermes.sh" "$host" $DRY_FLAG $FORCE_FLAG $SKIP_OC_FLAG; then
+              SUCCEEDED+=("$host")
+              echo "  ✓ $host complete"
+            else
+              FAILED+=("$host")
+              echo "  ✗ $host FAILED"
+            fi
+          done
+
+          echo ""
+          echo "════════════════════════════════════════════"
+          echo "  Summary"
+          echo "════════════════════════════════════════════"
+          echo "  Succeeded: ${SUCCEEDED[*]:-none}"
+          echo "  Failed:    ${FAILED[*]:-none}"
+
+          if [[ ${#FAILED[@]} -gt 0 ]]; then
+            exit 1
+          fi
+
+      - name: Verify all migrated nodes
+        if: github.event.inputs.dry_run != 'true'
+        run: |
+          echo ""
+          echo "═══ Post-migration verification ═══"
+          for host in ${{ steps.nodes.outputs.targets }}; do
+            STATUS=$(ssh -o ConnectTimeout=10 wbic16@$host \
+              "systemctl --user is-active hermes-gateway 2>/dev/null || echo inactive")
+            if [[ "$STATUS" == "active" ]]; then
+              echo "  ✓ $host — hermes-gateway active"
+            else
+              echo "  ✗ $host — hermes-gateway $STATUS"
+            fi
+          done

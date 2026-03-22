@@ -58,7 +58,28 @@ for skill_name, skill_cfg in d.get("skills", {}).get("entries", {}).items():
         env_key = f"OPENCLAW_SKILL_{skill_name.upper().replace('-','_')}_API_KEY"
         results[env_key] = skill_cfg["apiKey"]
 
-# ── 2. .env files under ~/.openclaw (skip node_modules) ─────────────────────
+# ── 2. auth-profiles.json — primary Anthropic key source ────────────────────
+# openclaw.json does NOT contain the Anthropic key directly; it lives in
+# ~/.openclaw/agents/main/agent/auth-profiles.json as profiles[name]["token"]
+auth_profiles_path = os.path.join(home, ".openclaw", "agents", "main", "agent", "auth-profiles.json")
+if os.path.exists(auth_profiles_path):
+    try:
+        with open(auth_profiles_path) as f:
+            ap = json.load(f)
+        profiles = ap.get("profiles", {})
+        last_good = ap.get("lastGood", {}).get("anthropic", "")
+        # Prefer lastGood profile, then fall back through all profiles
+        candidates = ([last_good] if last_good and last_good in profiles else []) + list(profiles.keys())
+        for pname in candidates:
+            p = profiles.get(pname, {})
+            token = p.get("token", "") or p.get("apiKey", "")
+            if token and token.startswith("sk-ant-"):
+                results.setdefault("ANTHROPIC_API_KEY", token)
+                break
+    except Exception as e:
+        print(f"# WARNING: could not parse auth-profiles.json: {e}", file=sys.stderr)
+
+# ── 3. .env files under ~/.openclaw (skip node_modules) ─────────────────────
 KEY_RE = re.compile(
     r'^(ANTHROPIC_API_KEY|OPENROUTER_API_KEY|OPENAI_API_KEY|FIRECRAWL_API_KEY'
     r'|WANDB_API_KEY|PARALLEL_API_KEY|FAL_KEY|HONCHO_API_KEY|HASS_TOKEN|HASS_URL'
