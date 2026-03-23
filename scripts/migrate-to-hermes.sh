@@ -450,6 +450,37 @@ systemctl --user enable hermes-gateway.service
 echo "  hermes-gateway.service enabled"
 REMOTE
 
+# ── Step 7b: Install hermes CLI wrapper + PATH ────────────────────────────────
+header "Step 7b: hermes CLI wrapper + PATH"
+
+remote_script "Install ~/.local/bin/hermes wrapper and add to PATH" << 'REMOTE'
+set -euo pipefail
+HERMES_AGENT="$HOME/.hermes/hermes-agent"
+LOCAL_BIN="$HOME/.local/bin"
+WRAPPER="$LOCAL_BIN/hermes"
+
+mkdir -p "$LOCAL_BIN"
+
+cat > "$WRAPPER" << 'EOF'
+#!/usr/bin/env bash
+HERMES_AGENT="$HOME/.hermes/hermes-agent"
+exec "$HERMES_AGENT/venv/bin/python" -m hermes_cli.main "$@"
+EOF
+chmod +x "$WRAPPER"
+echo "  wrapper written: $WRAPPER"
+
+PATH_LINE='export PATH="$HOME/.local/bin:$PATH"'
+for rc in ~/.bashrc ~/.profile; do
+    if [[ -f "$rc" ]] && ! grep -qF '.local/bin' "$rc" 2>/dev/null; then
+        printf '\n# Hermes CLI\n%s\n' "$PATH_LINE" >> "$rc"
+        echo "  PATH added to $rc"
+    fi
+done
+
+export PATH="$LOCAL_BIN:$PATH"
+hermes --version 2>/dev/null | head -1 && echo "  hermes works" || echo "  wrapper installed (open new shell to activate)"
+REMOTE
+
 # ── Step 8: Stop OpenClaw ─────────────────────────────────────────────────────
 header "Step 8: Stop OpenClaw"
 
