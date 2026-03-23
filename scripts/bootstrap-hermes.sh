@@ -330,6 +330,35 @@ dry "phext migration" || {
     success "Files migrated"
 }
 
+# ── Step 5b: Install hermes CLI wrapper + fix PATH ───────────────────────────
+header "Step 5b: hermes CLI + PATH"
+dry "create ~/.local/bin/hermes and update ~/.bashrc" || {
+    VENV_BIN="$HERMES_DIR/venv/bin"
+    LOCAL_BIN="$HOME/.local/bin"
+    mkdir -p "$LOCAL_BIN"
+
+    # Wrapper script — works from any shell context
+    cat > "$LOCAL_BIN/hermes" << EOF
+#!/usr/bin/env bash
+exec "$VENV_BIN/python" -m hermes_cli.main "\$@"
+EOF
+    chmod +x "$LOCAL_BIN/hermes"
+
+    # Add to ~/.bashrc (non-login shells, SSH sessions, cron)
+    MARKER="# hermes-agent PATH"
+    if ! grep -q "$MARKER" "$HOME/.bashrc" 2>/dev/null; then
+        cat >> "$HOME/.bashrc" << EOF
+
+$MARKER
+export PATH="\$HOME/.local/bin:\$HOME/.hermes/hermes-agent/venv/bin:\$PATH"
+EOF
+        echo "  PATH added to ~/.bashrc"
+    else
+        echo "  ~/.bashrc already has hermes PATH"
+    fi
+    success "hermes CLI available at ~/.local/bin/hermes"
+}
+
 # ── Step 6: Install + start hermes-gateway.service ───────────────────────────
 header "Step 6: Install hermes-gateway.service"
 dry "install systemd service" || {

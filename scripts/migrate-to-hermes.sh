@@ -225,6 +225,25 @@ elif [[ -f "$HERMES_DIR/requirements.txt" ]]; then
     "$HERMES_DIR/venv/bin/pip" install -q -r "$HERMES_DIR/requirements.txt" 2>&1 | tail -3
 fi
 echo "  venv ready"
+
+# Install hermes CLI wrapper + fix PATH in ~/.bashrc
+LOCAL_BIN="$HOME/.local/bin"
+VENV_BIN="$HOME/.hermes/hermes-agent/venv/bin"
+mkdir -p "$LOCAL_BIN"
+cat > "$LOCAL_BIN/hermes" << EOF
+#!/usr/bin/env bash
+exec "$VENV_BIN/python" -m hermes_cli.main "\$@"
+EOF
+chmod +x "$LOCAL_BIN/hermes"
+echo "  hermes wrapper: $LOCAL_BIN/hermes"
+
+MARKER="# hermes-agent PATH"
+if ! grep -q "$MARKER" "$HOME/.bashrc" 2>/dev/null; then
+    printf '\n%s\nexport PATH="$HOME/.local/bin:$HOME/.hermes/hermes-agent/venv/bin:$PATH"\n' "$MARKER" >> "$HOME/.bashrc"
+    echo "  PATH added to ~/.bashrc"
+else
+    echo "  ~/.bashrc already patched"
+fi
 REMOTE
 
 # ── Step 3: Extract keys from OpenClaw on target ─────────────────────────────
