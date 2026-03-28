@@ -226,6 +226,15 @@ elif [[ -f "$HERMES_DIR/requirements.txt" ]]; then
 fi
 echo "  venv ready"
 
+# Install libphext-py (phext as native Python type — MBV9 Phase 0)
+LIBPHEXT_PY="/source/libphext-py"
+if [[ -d "$LIBPHEXT_PY" ]]; then
+    "$HERMES_DIR/venv/bin/pip" install -q -e "$LIBPHEXT_PY" 2>&1 | tail -2
+    echo "  libphext-py installed (in-process phext reads/writes)"
+else
+    echo "  [!] libphext-py not found at $LIBPHEXT_PY — skipping (install manually)"
+fi
+
 # Install hermes CLI wrapper + fix PATH in ~/.bashrc
 LOCAL_BIN="$HOME/.local/bin"
 VENV_BIN="$HOME/.hermes/hermes-agent/venv/bin"
