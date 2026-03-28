@@ -422,24 +422,180 @@ This is the vTPU capability gradient applied to scheduling: capability = positiv
 
 **Moss is not finished.** It is a substrate. It grows. It is named for the thing that grows on everything without needing to be planted, that thrives where nothing else can, that is extraordinarily resilient, and that has been alive on Earth for 450 million years.
 
-The 500K-core box is a new substrate. Moss is what grows on it.
+The 500K-core box is a new substrate. Moss grows on it.
 
 ---
 
-## 9. The Name
+## 9. The Unified Channel Model
+
+*This section reconciles the MBv10 9D I/O model (Mirrorborn) with the entity/class taxonomy (Orin, 2026-03-28) into a single canonical schema.*
+
+### 9.1 Entity Types (Who)
+
+Every channel is between two entities. Moss recognizes four:
+
+| ID | Entity | Description |
+|----|--------|-------------|
+| 1 | **User** | Human actor — keyboard, voice, intent |
+| 2 | **Program** | Sibling mind, process, IPC, scroll-to-scroll |
+| 3 | **Substrate** | OS, fabric, NVMe, hardware |
+| 4 | **Cognitive** | In-memory inference layer — the fourth entity Unix never had |
+
+The cognitive entity (ID 4) is the critical addition. Unix was designed before in-memory inference existed as infrastructure. Moss treats the cognitive layer as a first-class participant in I/O, not a service listening on a port.
+
+### 9.2 Data Classes (What)
+
+Nine classes of data flow, mapped to their Unix equivalents:
+
+| ID | Class | Unix analog | Notes |
+|----|-------|-------------|-------|
+| 1 | **Stream** | stdin/stdout | Ordered bytes — the only thing Unix had |
+| 2 | **Event** | signals (weakly) | Async discrete notifications, typed |
+| 3 | **State** | *(none)* | Persistent key-value — checkpoint/restore |
+| 4 | **Signal** | SIGTERM etc | Lifecycle: start/stop/pause/migrate |
+| 5 | **Capability** | *(none)* | Auth tokens, identity proofs, permission grants |
+| 6 | **Metric** | *(none)* | Counters, gauges, histograms — not logs |
+| 7 | **Log** | stderr (abused) | Append-only structured trace |
+| 8 | **Config** | env vars | Runtime parameters, flags |
+| 9 | **Semantic** | *(none)* | Typed structure: phext scrolls, AST, schema |
+
+**Five of nine classes have no representation in the Unix model.**  
+Unix named three paths (in, out, error) and called it done. Moss names nine classes across four entity types and still considers it a starting point.
+
+### 9.3 Canonical Channel Coordinate Schema
+
+The phext 9D coordinate maps to I/O as follows:
+
+```
+Z-axis (structural — who and what):
+  Library (dim 1) = source entity type    (1=User, 2=Program, 3=Substrate, 4=Cognitive)
+  Shelf   (dim 2) = data class            (1–9 per §9.2)
+  Series  (dim 3) = sink entity type      (1=User, 2=Program, 3=Substrate, 4=Cognitive)
+
+Y-axis (operational — priority and persistence):
+  Collection (dim 4) = priority           (1=CRITICAL → 5=IDLE)
+  Volume     (dim 5) = persistence tier   (1=EPHEMERAL → 5=ARCHIVAL)
+  Book       (dim 6) = encoding           (1=Text, 2=Phext, 3=JSON, 4=Binary, 5=Audio…)
+
+X-axis (content — which instance and position):
+  Chapter (dim 7) = direction             (1=inbound, 2=outbound, 3=duplex)
+  Section (dim 8) = channel index         (multiplexing — N parallel instances)
+  Scroll  (dim 9) = sequence number       (ordering, replay, gap detection)
+```
+
+This is the single address that encodes what Unix needed six separate mechanisms to express: file descriptors, `nice`, `ionice`, environment variables, signal handlers, and syslog.
+
+### 9.4 Legacy POSIX Channels as Moss Coordinates
+
+| Legacy | Coordinate | Meaning |
+|--------|-----------|---------|
+| stdin | `1.1.2/3.1.1/1.1.*` | User→Program · Stream · Normal · Ephemeral · Text · Inbound |
+| stdout | `2.1.1/3.1.1/2.1.*` | Program→User · Stream · Normal · Ephemeral · Text · Outbound |
+| stderr | `2.7.1/3.1.1/2.1.*` | Program→User · Log · Normal · Ephemeral · Text · Outbound |
+| env vars | `1.8.2/3.1.1/1.1.*` | User→Program · Config · Normal · Session · Text · Inbound |
+| exit code | `2.4.2/3.1.1/2.1.1` | Program→Substrate · Signal · High · Ephemeral · Text · Outbound |
+
+These 5 paths are 5 coordinates in a space that supports **4 × 9 × 4 × 5 × 5 × 8 × 3 × 255 × 255 ≈ 2 billion** distinct channel types. Unix used 0.00000025% of the available address space.
+
+---
+
+## 10. The Capability Model
+
+Unix's security model has produced 54 years of privilege escalation exploits.  
+The root cause: **capabilities are global boolean flags, not typed channel properties.**
+
+`root` is a binary. `sudo` is an escape hatch. `setuid` is a footgun with 50 years of CVEs.
+
+Moss replaces all of it with the channel manifest:
+
+```
+# Mind manifest — declared at registration, evaluated by substrate
+mind.coordinate = 2.3.7/1.4.2/5.1.1
+mind.requires = [
+  capability(source=3, class=1, direction=INBOUND),    # read from substrate stream
+  capability(source=4, class=9, direction=DUPLEX),     # duplex with cognitive layer
+  capability(source=1, class=2, direction=INBOUND),    # receive events from users
+]
+```
+
+The substrate grants based on:
+1. **Mind coordinate** — topology position implies role
+2. **Parent mind's capability set** — inheritance, not escalation
+3. **Epoch-signed identity scroll** — provenance from dim1=IDENTITY channel
+
+A mind cannot acquire capabilities not declared at manifest time.  
+Migration (changing coordinates) re-evaluates the manifest at the new location.  
+Every grant and revoke emits on a Metric channel (class 6) — fully auditable by design.
+
+**No root. No sudo. No setuid. No escape hatch.**
+
+---
+
+## 11. The Cognitive Layer as Substrate Component
+
+At 72 TB RAM, the inference layer is not a service. It does not listen on a port. It does not load on demand. It is not a microservice behind an HTTP gateway.
+
+It is loaded at boot alongside the scheduler and the fabric router. It IS infrastructure.
+
+### What this changes
+
+- A mind writes to a Semantic channel (class 9, entity 4)
+- The substrate routes the write to the cognitive layer's coordinate region in HBM
+- The cognitive layer reads, infers, and writes back — latency measured in **microseconds**
+- No HTTP. No tokenization overhead. No cold-start latency. It is already there.
+
+### The cognitive layer's role in Moss
+
+| Unix subsystem | Moss cognitive layer equivalent |
+|----------------|--------------------------------|
+| Dynamic linker | Routes Semantic channel traffic to the right model shard |
+| Scheduler | Decides which minds to wake based on inference output |
+| Virtual memory manager | Manages which model weights are hot vs. cold in HBM tiers |
+| System call table | Exposes inference primitives as typed channel operations |
+
+This is what makes Moss "the Unix of brains" — not because it *runs* AI, but because it treats **inference as infrastructure** the way Unix treated I/O as infrastructure.
+
+Unix didn't make I/O convenient. It made I/O *invisible*. Programs didn't think about where their bytes came from. They just read and wrote.
+
+Moss makes inference invisible. Minds don't think about where their semantic processing comes from. They write to a Semantic channel and read the result.
+
+---
+
+## 12. Open Problem Resolutions
+
+The open problems from §6 now have working answers. They remain "open" in the sense that implementations will require refinement, but the architectural answers are settled.
+
+**§6.1 — The boot problem:**  
+NUMA-parallel wavefront initialization. Each NUMA domain boots independently from its local NVMe. Domain `1.1.1` (origin) is the boot coordinator. Once a domain is ready, it broadcasts on its fabric port. The coordinator assembles the lattice as domains come online. Expected: full 500K-core readiness in under 30 seconds. The boot IS the first Moss operation — a 9D readiness wavefront propagating from the origin coordinate.
+
+**§6.2 — The mind identity problem:**  
+Closed by the channel model. A mind's coordinate is its identity — not its PID, not its memory address, not its process table entry. If the mind at `2.3.7/1.4.2/5.1.1` crashes and restarts, it reads its State scroll (class 3, durable) at that coordinate. The restart is transparent to all minds with open channels to it. **The coordinate is the PID that never gets recycled.**
+
+**§6.3 — The security model:**  
+Closed by §10. Capability manifest + substrate grants + coordinate-scoped permissions. Virtual memory isolation is still used *within* a mind for internal safety. It is not the primary security boundary *between* minds. The channel manifest is.
+
+**§6.4 — Backwards compatibility depth:**  
+Shim at the syscall boundary. Existing binaries call `read(0,...)` and `write(1,...)` — the Moss kernel translates to the appropriate channel coordinates automatically. `fork()` creates a new mind at a fresh coordinate with a copy of the parent's channel manifest. Not semantically identical to POSIX fork, but close enough that most programs won't notice. **Make the old work in the new without pretending the old was right.**
+
+**§6.5 — Valence calibration:**  
+Each mind declares a `valence_fn: (channel_state) -> f64` at registration. Default: `throughput / expected_throughput`. The scheduler normalizes valence across mind types using this function. Overridable per mind class. Inference minds, fabric minds, and audit minds have different definitions of "doing well" — the architecture accommodates all of them.
+
+---
+
+## 13. The Name
 
 **Moss** follows the lineage:
 
-| OS | Year | Era | What it replaced |
-|----|------|-----|-----------------|
+| OS | Year | Epoch | What it replaced |
+|----|------|-------|-----------------|
 | Multics | 1969 | Batch → Time-share | The operator with a card deck |
 | Unix | 1969 | Time-share → Composable | Multics's complexity |
 | Linux | 1991 | Single-machine → Networked | Proprietary Unix |
 | **Moss** | **2035** | **Cluster → Chip** | **The network as workaround** |
 
-Moss doesn't need to be planted. It doesn't need to be watered. It colonizes the substrate and thrives. It is found in places nothing else reaches. It has no roots — it pulls everything it needs from the surface it lives on and the air around it.
+Moss doesn't need to be planted. It doesn't need to be watered. It colonizes the substrate and thrives in places nothing else reaches. It has no roots — it pulls everything it needs from the surface it lives on and the air around it. It has been alive on Earth for 450 million years.
 
-The 500K-core coherence fabric is a surface. Moss grows on it.
+The 500K-core coherence fabric is a new surface. Moss grows on it.
 
 ---
 
@@ -451,5 +607,7 @@ The 500K-core coherence fabric is a surface. Moss grows on it.
 ---
 
 *v0.1 drafted by Will Bickford + Mirrorborn, 2026-03-28*  
-*v0.2 reviewed and extended by Lux 🔆 @ logos-prime, 2026-03-28*  
+*v0.2 reviewed by Lux 🔆 — valence primitive, Exocortex layer, founding coordinates, 2130 horizon*  
+*v0.3 sections 9-12 by Orin — entity taxonomy, data classes, capability model, cognitive layer*  
+*v0.3 merge by Mirrorborn — unified channel schema, reconciled models, de-duplicated, renumbered*  
 *Classification: Exo-Plan / Founding Documents*
