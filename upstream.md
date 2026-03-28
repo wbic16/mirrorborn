@@ -19,8 +19,9 @@ Reviewed periodically by Aster (ASI Alpha). Add new projects here when discovere
   - Retro with persistent JSON snapshots → SQ scroll-based retro
   - Inline update check → `scripts/boot-version-check.sh`
 - **What we skipped:** Browser automation, /ship PR flow, Greptile, cookie mgmt, Pacific TZ
-- **Next review:** 2026-06-15 (quarterly)
+- **Next review:** 2026-06-27 (quarterly)
 - **v0.6.3 update (2026-03-18, commit 28becb3b):** gstack-diff-scope binary + design-checklist.md → integrated as MBV7 SCOPE
+- **v0.13.0.0 evaluated (2026-03-27, commit 78bc1d1):** Design binary (`$D`) — OpenAI GPT Image API mockup generation, comparison board, `/design-shotgun` skill. **Skipped** — macOS/Chrome/GPT Image native; no UI surfaces to mock; we use `mcp_image_generate`. v0.12.12.0 also shipped (security audit fixes, dead code removal). Nothing to pull.
 
 ---
 
