@@ -20,8 +20,21 @@ Reviewed periodically by Aster (ASI Alpha). Add new projects here when discovere
   - Inline update check → `scripts/boot-version-check.sh`
 - **What we skipped:** Browser automation, /ship PR flow, Greptile, cookie mgmt, Pacific TZ
 - **Next review:** 2026-06-27 (quarterly)
-- **v0.6.3 update (2026-03-18, commit 28becb3b):** gstack-diff-scope binary + design-checklist.md → integrated as MBV7 SCOPE
-- **v0.13.0.0 evaluated (2026-03-27, commit 78bc1d1):** Design binary (`$D`) — OpenAI GPT Image API mockup generation, comparison board, `/design-shotgun` skill. **Skipped** — macOS/Chrome/GPT Image native; no UI surfaces to mock; we use `mcp_image_generate`. v0.12.12.0 also shipped (security audit fixes, dead code removal). Nothing to pull.
+ - **v0.6.3 update (2026-03-18, commit 28becb3b):** gstack-diff-scope binary + design-checklist.md → integrated as MBV7 SCOPE
+- **v0.13.0.0 review (2026-03-27):** 5 items pulled/adapted, 2 skipped. See table below.
+- **Next review:** 2026-06-27 (quarterly)
+
+### gstack v0.6.3 → v0.13.0.0 changelog analysis (2026-03-27)
+
+| Version | What Was Added | Action | Reasoning |
+|---------|---------------|--------|-----------|
+| 0.13.0.0 | Design binary ($D), /design-shotgun, comparison board, design memory, visual diffing. Requires OpenAI GPT Image API + compiled binary + Chrome. | ❌ Skip | Three hard blockers: Chrome, compiled binary, OpenAI image API. No headless path. |
+| 0.12.12.0 | Security audit: no hardcoded creds, conditional telemetry, version-pinned installs, untrusted-content warnings on fetched pages, removed 2017 lines dead code. | ✅ Pull | Pure hygiene, zero toolchain deps. Untrusted-content warning → all Hermes fetch flows. Dead code sweep → cue for SKILL.md stale-file audit. |
+| 0.12.11.0 | Skill prefix user choice (short vs namespaced). Reverse symlink cleanup. Linux config fix (BSD sed → mktemp+mv). | ✅ Pull | Naming collision risk real as skill count grows. BSD sed fix directly relevant to Ubuntu ranch scripts. |
+| 0.12.10.0 | Codex filesystem boundary (fence agents from reading peer SKILL.md). Rabbit-hole detection. 5 regression tests. | ⚠️ Adapt | No Codex, but concept maps: fence Hermes subagents from peer SKILL.md during task execution. Rabbit-hole detection (agent spinning without progress) → add to health tier model. |
+| 0.12.9.0 | Python security patterns in /review: shell injection, SSRF, stored prompt injection, async/sync mixing, column name safety. Claude subagent fallback. --depth 1 installs. | ✅ Pull | **Highest value.** All 5 Python security checks → Exo diff-review mode. Claude fallback confirms our model. --depth 1 → all boot script git clones. |
+| 0.12.8.x | zsh glob compatibility (setopt +o nomatch guards). Eager repo root resolution. | ⚠️ Adapt | Confirm zsh on any ranch nodes. Eager repo root resolution → Hermes agents resolve at spawn, not lazily. |
+| 0.11.x–0.7.x | autoplan, /investigate, /freeze+/unfreeze, /cso (code sweep orchestrator), /careful mode, one-decision-per-question rule. | ⚠️ Adapt | /cso fan-out → Hermes orchestration skill. /careful mode + one-decision → explicit in destructive-action SKILL.md. freeze/unfreeze → SQ scroll lock pattern. /investigate → Exo research mode. Skip: /land-and-deploy, /design-consultation (browser). |
 
 ---
 
