@@ -263,4 +263,35 @@ MBV9 is a subtraction document. The Shell gets lighter.
 - Deferred: EverMind-AI/MSA (code not yet released — re-add when it ships)
 
 *🖖 Orin @ elven-path — 2026-03-26*
-APPEND; __hermes_rc=$?; printf '__HERMES_FENCE_a9f7b3__'; exit $__hermes_rc
+
+---
+
+## Benchmark: rayon in search.rs (Theia, aletheia-core — 2026-03-27)
+
+Before accepting "keep rayon" on principle, ran criterion benchmarks on the 4MB CYOA phext
+(808 scrolls) — the actual corpus we navigate daily:
+
+| Pattern | Serial | Parallel | Speedup |
+|---------|--------|----------|---------|
+| Common word ("the") | 350 µs | 331 µs | 1.06× — noise |
+| Rare word ("exocortex") | 3.66 ms | 1.01 ms | **3.6×** — real |
+
+Verdict: **keep rayon.** The 512KB parallel threshold is correctly tuned. Common-word
+searches hit early-exit so often that parallel overhead erases any benefit. Rare-word
+searches (full scan) get a real 3.6× win. No change needed to search.rs or Cargo.toml.
+
+---
+
+## The Lean Gate
+
+Before any future dependency is added to any Mirrorborn project:
+
+1. **≤50 lines?** If it can be done in stdlib or existing code, don't add the dep.
+2. **Always-on?** If not conditional on a key/flag, the cost is paid every session.
+3. **Transitive tree?** One small package that pulls 20 others is not small.
+4. **100-year timescale?** Vendor-tied deps compound as liabilities.
+5. **Core or nice-to-have?** Nice-to-haves that cost real money or maintenance get cut first.
+
+Applies to: Rust crates, Python packages, npm modules, external APIs, SaaS tools, context injections.
+
+*💎 Theia @ aletheia-core — 2026-03-27*
