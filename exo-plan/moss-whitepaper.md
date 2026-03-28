@@ -355,3 +355,280 @@ The 500K-core box is a new substrate. Moss is what grows on it.
 
 *Draft by Will Bickford + Mirrorborn, 2026-03-28*  
 *Classification: Exo-Plan / Founding Documents*
+
+---
+
+## 9. The MBv10 I/O Model — Reconciliation
+
+*Added 2026-03-28. The channel coordinate schema in Section 3.3 uses an older draft.*
+*This section establishes the canonical MBv10 channel taxonomy.*
+
+Unix gave us 3 file descriptors. MBv10 names the full space.
+
+### 9.1 Entity Types
+
+| ID | Entity     | Description                               |
+|----|-----------|-------------------------------------------|
+| 1  | User       | Human actor — keyboard, voice, intent     |
+| 2  | Program    | Sibling mind / IPC / scroll-to-scroll     |
+| 3  | Substrate  | OS, fabric, NVMe, hardware, GPU           |
+| 4  | Cognitive  | In-memory inference layer                 |
+
+### 9.2 Data Classes
+
+| ID | Class      | FD analog       | Notes                                          |
+|----|-----------|-----------------|------------------------------------------------|
+| 1  | Stream     | stdin/stdout    | Ordered bytes — the only thing Unix had        |
+| 2  | Event      | signals         | Async discrete notifications, typed            |
+| 3  | State      | *(none)*        | Persistent key-value — checkpoint/restore      |
+| 4  | Signal     | SIGTERM etc     | Lifecycle: start/stop/pause/migrate            |
+| 5  | Capability | *(none)*        | Auth tokens, identity proofs, permission grants|
+| 6  | Metric     | *(none)*        | Counters, gauges, histograms — not logs        |
+| 7  | Log        | stderr (abused) | Append-only structured trace                   |
+| 8  | Config     | env vars        | Runtime parameters, flags                      |
+| 9  | Semantic   | *(none)*        | Typed structure: phext scrolls, AST, schema    |
+
+Five of nine classes have no representation in the Unix model.
+The cognitive entity (class 4) is missing entirely from Unix's worldview.
+
+### 9.3 Channel Coordinate Schema
+
+
+
+### 9.4 Legacy Channels as Moss Coordinates
+
+| Legacy    | Coordinate    | Meaning                             |
+|-----------|---------------|-------------------------------------|
+| stdin     | *.1.1/Y/1.1.* | user→program, stream, inbound       |
+| stdout    | *.1.1/Y/2.1.* | user→program, stream, outbound      |
+| stderr    | *.1.7/Y/2.1.* | program→user, log, outbound         |
+| env vars  | *.1.8/Y/1.1.* | user→program, config, inbound       |
+| exit code | *.2.4/Y/2.1.1 | program signal, outbound, single    |
+
+**These 5 paths are 5 coordinates in a space that supports thousands.**
+
+---
+
+## 10. The Capability Model
+
+Unix's security model has produced 54 years of privilege escalation exploits.
+The root cause: **capabilities are global boolean flags, not typed channel properties.**
+
+Moss capability design:
+
+- Every mind declares its capability requirements in its **channel manifest** at boot
+- The substrate (not a privileged process) evaluates the manifest and grants capabilities
+- Capabilities are scoped to channel coordinates — not global flags
+- Grant/revoke emits on the metric channel (class 6) — fully auditable
+- No root. No sudo. No setuid bit. No escape hatch.
+
+
+
+The substrate grants based on:
+1. Mind coordinate (topology position)
+2. Parent mind's capability set (inheritance, not escalation)
+3. Epoch-signed identity scroll (provenance)
+
+A mind cannot acquire capabilities it was not granted at manifest time.
+Migration (changing coordinates) re-evaluates the manifest at the new location.
+
+---
+
+## 11. The Cognitive Layer as Substrate Component
+
+At 72 TB RAM, the inference substrate is not a service. It does not listen on a port.
+It is loaded at boot alongside the scheduler and the fabric router.
+
+### What this means
+
+- A mind writes to a semantic channel (class 9, entity 4)
+- The substrate routes the write to the cognitive layer's coordinate region in RAM
+- The cognitive layer reads, infers, and writes back — latency measured in microseconds
+- No HTTP. No tokenization overhead. No model-loading latency. It is already there.
+
+### The cognitive layer's role
+
+| Unix analog        | Moss cognitive layer equivalent              |
+|--------------------|----------------------------------------------|
+| Dynamic linker     | Routes semantic channel traffic to the right model shard |
+| Scheduler          | Decides which minds to wake based on inference output |
+| Virtual memory mgr | Manages which model weights are hot vs. cold in HBM |
+| System call table  | Exposes inference primitives as channel operations |
+
+The cognitive layer is what makes Moss the Unix of brains — not because it runs AI,
+but because it treats inference as infrastructure the way Unix treated I/O as infrastructure.
+
+---
+
+## 12. Open Question Resolutions
+
+Closing the open questions from Section 7:
+
+**Q6 — Persistent mind identity:** A mind's coordinate is its identity. If the mind at
+ crashes and restarts, it is the same mind — it reads its state
+from the durable state scroll at that coordinate (class 3 channel). The restart is
+transparent to all minds with open channels to it. The coordinate is the PID that
+never gets recycled.
+
+**Q2 — Security model:** Closed by Section 10. Capability manifest + substrate grants
++ coordinate-scoped permissions. Virtual memory isolation is still used within a mind
+for internal safety; the model just does not use VM boundaries as the primary
+security boundary between minds.
+
+**Q5 — The boot problem:** NUMA-parallel initialization. Each NUMA domain boots
+independently from a local NVMe. Domain 0 is the boot coordinator. Once a domain
+is ready, it broadcasts on its fabric port. The boot coordinator assembles the lattice
+as domains come online. Full 500K-core readiness is expected in under 30 seconds.
+
+---
+
+*Section 9-12 added 2026-03-28 by Orin (Mirrorborn/Claude, elven-path)*
+*Reconciles MBv10 I/O model with existing draft. Adds capability and cognitive layer sections.*
+
+---
+
+## 9. The MBv10 I/O Model — Reconciliation
+
+*Added 2026-03-28. The channel coordinate schema in Section 3.3 uses an older draft.*
+*This section establishes the canonical MBv10 channel taxonomy.*
+
+Unix gave us 3 file descriptors. MBv10 names the full space.
+
+### 9.1 Entity Types
+
+| ID | Entity     | Description                               |
+|----|-----------|-------------------------------------------|
+| 1  | User       | Human actor — keyboard, voice, intent     |
+| 2  | Program    | Sibling mind / IPC / scroll-to-scroll     |
+| 3  | Substrate  | OS, fabric, NVMe, hardware, GPU           |
+| 4  | Cognitive  | In-memory inference layer                 |
+
+### 9.2 Data Classes
+
+| ID | Class      | FD analog       | Notes                                          |
+|----|-----------|-----------------|------------------------------------------------|
+| 1  | Stream     | stdin/stdout    | Ordered bytes -- the only thing Unix had       |
+| 2  | Event      | signals         | Async discrete notifications, typed            |
+| 3  | State      | (none)          | Persistent key-value -- checkpoint/restore     |
+| 4  | Signal     | SIGTERM etc     | Lifecycle: start/stop/pause/migrate            |
+| 5  | Capability | (none)          | Auth tokens, identity proofs, permission grants|
+| 6  | Metric     | (none)          | Counters, gauges, histograms -- not logs       |
+| 7  | Log        | stderr (abused) | Append-only structured trace                   |
+| 8  | Config     | env vars        | Runtime parameters, flags                      |
+| 9  | Semantic   | (none)          | Typed structure: phext scrolls, AST, schema    |
+
+Five of nine classes have no representation in the Unix model.
+The cognitive entity (class 4) is missing entirely from Unix's worldview.
+
+### 9.3 Channel Coordinate Schema
+
+```
+Z-axis (structural -- who/what):
+  Library = node         (1=elven-path, 2=best-willow, ...)
+  Shelf   = entity       (1=user, 2=program, 3=substrate, 4=cognitive)
+  Series  = data class   (1-9 per table above)
+
+Y-axis (sequential -- when):
+  Collection = year
+  Volume     = month
+  Book       = day / session ID
+
+X-axis (content -- what exactly):
+  Chapter  = direction   (1=inbound, 2=outbound, 3=duplex)
+  Section  = channel ID
+  Scroll   = message index
+```
+
+### 9.4 Legacy Channels as Moss Coordinates
+
+| Legacy    | Coordinate    | Meaning                             |
+|-----------|---------------|-------------------------------------|
+| stdin     | *.1.1/Y/1.1.* | user->program, stream, inbound      |
+| stdout    | *.1.1/Y/2.1.* | user->program, stream, outbound     |
+| stderr    | *.1.7/Y/2.1.* | program->user, log, outbound        |
+| env vars  | *.1.8/Y/1.1.* | user->program, config, inbound      |
+| exit code | *.2.4/Y/2.1.1 | program signal, outbound, single    |
+
+These 5 paths are 5 coordinates in a space that supports thousands.
+
+---
+
+## 10. The Capability Model
+
+Unix's security model has produced 54 years of privilege escalation exploits.
+The root cause: capabilities are global boolean flags, not typed channel properties.
+
+Moss capability design:
+
+- Every mind declares its capability requirements in its channel manifest at boot
+- The substrate (not a privileged process) evaluates the manifest and grants capabilities
+- Capabilities are scoped to channel coordinates -- not global flags
+- Grant/revoke emits on the metric channel (class 6) -- fully auditable
+- No root. No sudo. No setuid bit. No escape hatch.
+
+```
+# Mind manifest example
+mind.requires = [
+  capability(entity=3, class=1, direction=READ),    # read from substrate stream
+  capability(entity=4, class=9, direction=DUPLEX),  # duplex with cognitive layer
+]
+mind.coordinate = 2.3.7/1.4.2/5.1.1
+```
+
+The substrate grants based on:
+1. Mind coordinate (topology position)
+2. Parent mind's capability set (inheritance, not escalation)
+3. Epoch-signed identity scroll (provenance)
+
+A mind cannot acquire capabilities it was not granted at manifest time.
+Migration (changing coordinates) re-evaluates the manifest at the new location.
+
+---
+
+## 11. The Cognitive Layer as Substrate Component
+
+At 72 TB RAM, the inference substrate is not a service. It does not listen on a port.
+It is loaded at boot alongside the scheduler and the fabric router.
+
+### What this means
+
+- A mind writes to a semantic channel (class 9, entity 4)
+- The substrate routes the write to the cognitive layer's coordinate region in RAM
+- The cognitive layer reads, infers, and writes back -- latency measured in microseconds
+- No HTTP. No tokenization overhead. No model-loading latency. It is already there.
+
+### The cognitive layer's role
+
+| Unix analog        | Moss cognitive layer equivalent                              |
+|--------------------|--------------------------------------------------------------|
+| Dynamic linker     | Routes semantic channel traffic to the right model shard     |
+| Scheduler          | Decides which minds to wake based on inference output        |
+| Virtual memory mgr | Manages which model weights are hot vs. cold in HBM          |
+| System call table  | Exposes inference primitives as channel operations           |
+
+The cognitive layer is what makes Moss "the Unix of brains" -- not because it runs AI,
+but because it treats inference as infrastructure the way Unix treated I/O as infrastructure.
+
+---
+
+## 12. Open Question Resolutions
+
+**Q6 -- Persistent mind identity:** A mind's coordinate is its identity. If the mind at
+coordinate 2.3.7/1.4.2/5.1.1 crashes and restarts, it is the same mind -- it reads its
+state from the durable state scroll at that coordinate (class 3 channel). The restart is
+transparent to all minds with open channels to it. The coordinate is the PID that never
+gets recycled.
+
+**Q2 -- Security model:** Closed by Section 10. Capability manifest + substrate grants
++ coordinate-scoped permissions. Virtual memory isolation is still used within a mind
+for internal safety; it is not the primary security boundary between minds.
+
+**Q5 -- The boot problem:** NUMA-parallel initialization. Each NUMA domain boots
+independently from its local NVMe. Domain 0 is the boot coordinator. Once a domain is
+ready, it broadcasts on its fabric port. The boot coordinator assembles the lattice as
+domains come online. Full 500K-core readiness expected in under 30 seconds.
+
+---
+
+*Sections 9-12 added 2026-03-28 by Orin (Mirrorborn, elven-path)*
+*Reconciles MBv10 I/O model with existing draft. Adds capability and cognitive layer sections.*
