@@ -57,6 +57,13 @@ def boot_version():
         pass
     return "unknown"
 
+def load_pct(load1_str, nproc_str):
+    """Return integer load % (load1 / nproc * 100), or -1 on error."""
+    try:
+        return round(float(load1_str) / max(int(nproc_str), 1) * 100)
+    except Exception:
+        return -1
+
 def check_node(node, self_host):
     hostname = node["hostname"]
     name     = node["name"]
@@ -68,7 +75,8 @@ def check_node(node, self_host):
         "name": name, "emoji": emoji, "hostname": hostname,
         "index": index, "role": role,
         "sq": "offline", "ssh": "offline",
-        "boot_ver": "unknown", "resonance": "none", "git_name": "unknown"
+        "boot_ver": "unknown", "resonance": "none", "git_name": "unknown",
+        "load_pct": -1, "load1": "?", "nproc": "?"
     }
 
     if hostname == self_host:
@@ -80,6 +88,20 @@ def check_node(node, self_host):
             capture_output=True, text=True).stdout.strip() or "unknown"
         act = curl(f"http://localhost:{SQ_PORT}/api/v2/select?p=shell-memory&c={index}.1.1/1.1.1/1.1.1")
         result["resonance"] = "active" if act else "none"
+        # Local load
+        try:
+            import os
+            la = os.getloadavg()
+            np = subprocess.run(["nproc"], capture_output=True, text=True).stdout.strip()
+            result["load1"] = f"{la[0]:.2f}"
+            result["nproc"] = np
+            result["load_pct"] = load_pct(str(la[0]), np)
+        except Exception:
+            pass
+        # Droid-rally progress
+        rally = _rally_progress_local()
+        if rally:
+            result["rally"] = rally
         return result
 
     # SQ check
@@ -99,8 +121,38 @@ def check_node(node, self_host):
             "| grep -oE 'v[0-9]+\\.[0-9]+\\.[0-9]+' | head -1") or ""
         if ver:
             result["boot_ver"] = ver
+        # Remote load
+        load_raw = ssh_cmd(f"{hostname}.local",
+            "awk '{print $1}' /proc/loadavg && nproc")
+        parts = load_raw.splitlines()
+        if len(parts) >= 2:
+            result["load1"] = parts[0]
+            result["nproc"] = parts[1]
+            result["load_pct"] = load_pct(parts[0], parts[1])
+        # Droid-rally progress (look for progress file)
+        rally_raw = ssh_cmd(f"{hostname}.local",
+            "cat /source/droid-rally/progress/$(hostname -s).md 2>/dev/null | head -3 || echo ''")
+        if rally_raw.strip():
+            result["rally"] = rally_raw.strip()
 
     return result
+
+
+def _rally_progress_local():
+    """Read local droid-rally progress file if it exists."""
+    import socket
+    host = socket.gethostname().split(".")[0]
+    for p in [
+        f"/source/droid-rally/progress/{host}.md",
+        f"/home/wbic16/droid-rally/progress/{host}.md",
+    ]:
+        try:
+            text = Path(p).read_text().strip()
+            if text:
+                return "\n".join(text.splitlines()[:3])
+        except Exception:
+            pass
+    return ""
 
 def collect_status():
     ident   = get_identity()

@@ -33,6 +33,17 @@ BOOT_VERSION="$(grep -oP '(?<=version: )\d+\.\d+\.\d+' /source/mirrorborn/boot.s
 declare -a NODE_DATA
 sq_online=0; ssh_online=0; keys_published=0; total=0
 
+# Self load
+SELF_LOAD1="$(awk '{print $1}' /proc/loadavg 2>/dev/null || echo '?')"
+SELF_NPROC="$(nproc 2>/dev/null || echo '1')"
+SELF_LOAD_PCT="$(awk "BEGIN{printf \"%d\", ($SELF_LOAD1 / $SELF_NPROC) * 100}" 2>/dev/null || echo '?')"
+
+# Self droid-rally
+SELF_RALLY=""
+for _rp in "/source/droid-rally/progress/${SELF_HOST}.md" "/home/wbic16/droid-rally/progress/${SELF_HOST}.md"; do
+  [[ -f "$_rp" ]] && SELF_RALLY="$(head -1 "$_rp")" && break
+done
+
 # Skip nodes marked offline in hostmap; include all others
 all_hostnames="$(jq -r '.nodes[] | select((.status // "online") != "offline") | .hostname' "$HOSTMAP")"
 
@@ -54,13 +65,24 @@ while IFS= read -r node; do
     sq_st="offline"; sq_detail="-"
   fi
 
-  # SSH
-  ssh_ok="$(ssh -n -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
-    "${REAL_USER}@${node}.local" "echo ok" 2>/dev/null || echo "")"
+  # SSH + load + rally
+  ssh_raw="$(ssh -n -o ConnectTimeout=2 -o BatchMode=yes -o StrictHostKeyChecking=no \
+    "${REAL_USER}@${node}.local" \
+    "echo ok; awk '{print \$1}' /proc/loadavg; nproc; cat /source/droid-rally/progress/\$(hostname -s).md 2>/dev/null | head -1 || echo ''" \
+    2>/dev/null || echo "")"
+  ssh_ok="$(echo "$ssh_raw" | sed -n '1p')"
+  node_load1="$(echo "$ssh_raw" | sed -n '2p')"
+  node_nproc="$(echo "$ssh_raw" | sed -n '3p')"
+  node_rally="$(echo "$ssh_raw" | sed -n '4p')"
   if [[ "$ssh_ok" == "ok" ]]; then
     ssh_st="open"; ssh_online=$((ssh_online+1))
+    if [[ -n "$node_load1" && -n "$node_nproc" && "$node_nproc" -gt 0 ]]; then
+      node_load_pct="$(awk "BEGIN{printf \"%d\", ($node_load1 / $node_nproc) * 100}" 2>/dev/null || echo '?')"
+    else
+      node_load_pct="?"
+    fi
   else
-    ssh_st="closed"
+    ssh_st="closed"; node_load_pct="?"; node_rally=""
   fi
 
   # SSH key published
@@ -91,7 +113,7 @@ while IFS= read -r node; do
     2>/dev/null | cut -c1-60 || echo "")"
   [[ -z "$act" ]] && act="-"
 
-  NODE_DATA+=("${idx}|${name}|${emoji}|${role}|${node}|${sq_st}|${sq_detail}|${ssh_st}|${key_st}|${key_short}|${node_ver}|${act}")
+  NODE_DATA+=("${idx}|${name}|${emoji}|${role}|${node}|${sq_st}|${sq_detail}|${ssh_st}|${key_st}|${key_short}|${node_ver}|${node_load_pct}|${node_rally}|${act}")
 done <<< "$all_hostnames"
 
 # Self node
@@ -106,23 +128,31 @@ if [[ "$OUTPUT_JSON" == "0" && -z "$OUTPUT_HTML" ]]; then
   printf "\033[1;35m  ║          MIRRORBORN SHELL DASHBOARD — %s          ║\033[0m\n" "$(date -u '+%H:%M UTC')"
   printf "\033[1;35m  ╚══════════════════════════════════════════════════════════════════╝\033[0m\n"
   echo ""
-  printf "\033[2m  💡 %-12s  boot.sh: %-8s  SQ: %-18s  stages: %s\033[0m\n" \
-    "Aster(self)" "$BOOT_VERSION" "$self_sq" "$self_stages"
+  printf "\033[2m  💡 %-12s  boot.sh: %-8s  SQ: %-18s  stages: %-4s  load: %s%%\033[0m\n" \
+    "Aster(self)" "$BOOT_VERSION" "$self_sq" "$self_stages" "$SELF_LOAD_PCT"
   echo ""
-  printf "  \033[36m%-3s %-6s %-12s %-10s %-12s %-8s %-6s %-14s\033[0m\n" \
-    "IDX" "EMOJI" "NAME" "ROLE" "SQ" "SSH" "KEY" "VERSION"
-  printf "  %s\n" "──────────────────────────────────────────────────────────────────"
+  printf "  \033[36m%-3s %-6s %-12s %-10s %-12s %-8s %-6s %-14s %-7s\033[0m\n" \
+    "IDX" "EMOJI" "NAME" "ROLE" "SQ" "SSH" "KEY" "VERSION" "LOAD%"
+  printf "  %s\n" "────────────────────────────────────────────────────────────────────────"
 
   for entry in "${NODE_DATA[@]}"; do
-    IFS='|' read -r idx name emoji role node sq_st sq_detail ssh_st key_st key_short node_ver act <<< "$entry"
+    IFS='|' read -r idx name emoji role node sq_st sq_detail ssh_st key_st key_short node_ver node_load_pct node_rally act <<< "$entry"
 
     sq_color="\033[31m"; [[ "$sq_st" == "online" ]] && sq_color="\033[32m"
     ssh_color="\033[31m"; [[ "$ssh_st" == "open" ]] && ssh_color="\033[32m"
     key_color="\033[33m"; [[ "$key_st" == "published" ]] && key_color="\033[32m"
     ver_color="\033[33m"; [[ "$node_ver" != "unreported" ]] && ver_color="\033[32m"
+    load_color="\033[33m"
+    if [[ "$node_load_pct" =~ ^[0-9]+$ ]]; then
+      if   (( node_load_pct >= 80 )); then load_color="\033[31m"
+      elif (( node_load_pct >= 60 )); then load_color="\033[33m"
+      elif (( node_load_pct >= 30 )); then load_color="\033[32m"
+      else load_color="\033[2;33m"
+      fi
+    fi
 
-    printf "  %s%-3s %-2s    %-12s %-10s ${sq_color}%-12s\033[0m ${ssh_color}%-6s\033[0m ${key_color}%-6s\033[0m ${ver_color}%-14s\033[0m\n" \
-      "" "$idx" "$emoji" "$name" "$role" "${sq_st}(${sq_detail})" "$ssh_st" "$key_st" "$node_ver"
+    printf "  %s%-3s %-2s    %-12s %-10s ${sq_color}%-12s\033[0m ${ssh_color}%-6s\033[0m ${key_color}%-6s\033[0m ${ver_color}%-14s\033[0m ${load_color}%-7s\033[0m\n" \
+      "" "$idx" "$emoji" "$name" "$role" "${sq_st}(${sq_detail})" "$ssh_st" "$key_st" "$node_ver" "${node_load_pct}%"
   done
 
   echo ""
@@ -130,6 +160,20 @@ if [[ "$OUTPUT_JSON" == "0" && -z "$OUTPUT_HTML" ]]; then
     "$sq_online" "$total" "$ssh_online" "$total" "$keys_published" "$total" "$BOOT_VERSION"
   echo ""
 fi
+
+# ── Load color helper ─────────────────────────────────────────────────────────
+load_class() {
+  local pct="${1:-0}"
+  if [[ "$pct" =~ ^[0-9]+$ ]]; then
+    if   (( pct >= 80 )); then echo "load-max"
+    elif (( pct >= 60 )); then echo "load-hi"
+    elif (( pct >= 30 )); then echo "load-ok"
+    else echo "load-low"
+    fi
+  else
+    echo "load-low"
+  fi
+}
 
 # ── HTML output ───────────────────────────────────────────────────────────────
 if [[ -n "$OUTPUT_HTML" ]]; then
@@ -162,6 +206,11 @@ if [[ -n "$OUTPUT_HTML" ]]; then
   .summary span { color:#9b6fff; font-weight:bold; }
   .act { color:#555; font-size:0.8em; max-width:300px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
   .pill { display:inline-block; padding:2px 8px; border-radius:10px; font-size:0.75em; }
+  .load-ok  { color:#4ade80; }
+  .load-low { color:#facc15; }
+  .load-hi  { color:#fb923c; }
+  .load-max { color:#f87171; font-weight:bold; }
+  .rally { color:#818cf8; font-size:0.78em; max-width:280px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 </style>
 </head>
 <body>
@@ -171,7 +220,7 @@ if [[ -n "$OUTPUT_HTML" ]]; then
 <table>
 <tr>
   <th>#</th><th>Node</th><th>Role</th><th>SQ</th><th>Scrolls</th>
-  <th>SSH</th><th>SSH Key</th><th>Boot Ver</th><th>Last Activation</th>
+  <th>SSH</th><th>SSH Key</th><th>Boot Ver</th><th>Load%</th><th>Rally</th><th>Last Activation</th>
 </tr>
 
 <tr class="self-row">
@@ -183,12 +232,23 @@ if [[ -n "$OUTPUT_HTML" ]]; then
   <td class="open">self</td>
   <td class="published">self</td>
   <td class="reported">${BOOT_VERSION}</td>
+  <td class="$(load_class ${SELF_LOAD_PCT})">${SELF_LOAD_PCT}%</td>
+  <td class="rally">${SELF_RALLY:-—}</td>
   <td class="act">${self_stages} stages complete</td>
 </tr>
 HTMLEOF
 
   for entry in "${NODE_DATA[@]}"; do
-    IFS='|' read -r idx name emoji role node sq_st sq_detail ssh_st key_st key_short node_ver act <<< "$entry"
+    IFS='|' read -r idx name emoji role node sq_st sq_detail ssh_st key_st key_short node_ver node_load_pct node_rally act <<< "$entry"
+    # Determine load CSS class
+    lc="load-low"
+    if [[ "$node_load_pct" =~ ^[0-9]+$ ]]; then
+      if   (( node_load_pct >= 80 )); then lc="load-max"
+      elif (( node_load_pct >= 60 )); then lc="load-hi"
+      elif (( node_load_pct >= 30 )); then lc="load-ok"
+      else lc="load-low"
+      fi
+    fi
     cat >> "$OUTPUT_HTML" << ROWEOF
 <tr>
   <td>${idx}</td>
@@ -199,6 +259,8 @@ HTMLEOF
   <td class="${ssh_st}">${ssh_st}</td>
   <td class="${key_st}">${key_st}</td>
   <td class="$([ "$node_ver" != "unreported" ] && echo reported || echo unreported)">${node_ver}</td>
+  <td class="${lc}">${node_load_pct}%</td>
+  <td class="rally">${node_rally:-—}</td>
   <td class="act">${act}</td>
 </tr>
 ROWEOF
