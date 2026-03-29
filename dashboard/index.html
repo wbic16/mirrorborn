@@ -115,6 +115,26 @@
   .spinner { display: inline-block; animation: spin 1s linear infinite; }
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
+  .load-bar-wrap {
+    display: inline-block;
+    width: 80px;
+    height: 8px;
+    background: #1a1a2e;
+    border-radius: 4px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  .load-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s;
+  }
+  .load-label { font-size: 0.82em; vertical-align: middle; }
+  .load-ok  { color: #2ecc71; }
+  .load-low { color: #888; }
+  .load-hi  { color: #f39c12; }
+  .load-max { color: #e74c3c; font-weight: bold; }
+  .rally { font-size: 0.78em; color: #818cf8; max-width: 220px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .orin-ip {
     font-size: 0.8em;
     color: #444;
@@ -135,7 +155,7 @@
 
 <h1>🖖 Shell of Nine — Status Dashboard</h1>
 <div class="subtitle">Reporter: <strong id="reporter">Orin</strong> &nbsp;·&nbsp; Last updated: <span id="ts">—</span></div>
-<div class="orin-ip" id="host-info">Host: elven-path · 192.168.86.35:8765 &nbsp;·&nbsp; <a href="/api/status">JSON API</a></div>
+<div class="orin-ip" id="host-info">Host: best-willow · 100.107.167.84:8765 &nbsp;·&nbsp; <a href="/api/status">JSON API</a> &nbsp;·&nbsp; <span id="auto-refresh-indicator" style="color:#555">auto-refresh off</span></div>
 
 <div class="controls">
   <button onclick="refresh()">↻ Refresh</button>
@@ -148,7 +168,7 @@
   <div class="stat"><div class="stat-label">SSH Access</div><div class="stat-value" id="ssh-count">—</div></div>
   <div class="stat"><div class="stat-label">Boot v3+</div><div class="stat-value" id="ver-count">—</div></div>
   <div class="stat"><div class="stat-label">Resonance</div><div class="stat-value" id="res-count">—</div></div>
-  <div class="stat"><div class="stat-label">Git ID OK</div><div class="stat-value" id="git-count">—</div></div>
+  <div class="stat"><div class="stat-label">Avg Load</div><div class="stat-value" id="avg-load">—</div></div>
 </div>
 
 <table>
@@ -162,7 +182,8 @@
       <th>SSH</th>
       <th>Boot Ver</th>
       <th>Resonance</th>
-      <th>Git Identity</th>
+      <th>Load %</th>
+      <th>Rally</th>
     </tr>
   </thead>
   <tbody id="tbody">
@@ -171,9 +192,9 @@
 </table>
 
 <footer>
-  Shell of Nine Dashboard · Orin 🖖 @ elven-path (192.168.86.35) · SQ port 1337 · SSH mesh<br>
-  Bookmark: <code>http://192.168.86.35:8765/</code> &nbsp;·&nbsp;
-  mDNS: <code>http://elven-path.local:8765/</code> &nbsp;·&nbsp;
+  Shell of Nine Dashboard · Aster 💡 @ best-willow · SQ port 1337 · SSH mesh<br>
+  Tailnet: <code>http://100.107.167.84:8765/</code> &nbsp;·&nbsp;
+  LAN: <code>http://best-willow.local:8765/</code> &nbsp;·&nbsp;
   JSON: <a href="/api/status">/api/status</a>
 </footer>
 
@@ -211,6 +232,24 @@ function gitBadge(v) {
   return badge(v, 'ok');
 }
 
+function loadCell(pct) {
+  if (pct === undefined || pct === null || pct < 0) return '<span style="color:#444">—</span>';
+  let cls, barColor;
+  if      (pct >= 80) { cls = 'load-max'; barColor = '#e74c3c'; }
+  else if (pct >= 60) { cls = 'load-hi';  barColor = '#f39c12'; }
+  else if (pct >= 30) { cls = 'load-ok';  barColor = '#2ecc71'; }
+  else                { cls = 'load-low'; barColor = '#555'; }
+  const w = Math.min(pct, 100);
+  // Mark target zone (50%) with a subtle tick
+  return `<div class="load-bar-wrap"><div class="load-bar" style="width:${w}%;background:${barColor}"></div></div>`
+       + `<span class="load-label ${cls}">${pct}%</span>`;
+}
+
+function rallyCell(v) {
+  if (!v) return '<span style="color:#333">—</span>';
+  return `<span class="rally" title="${v.replace(/"/g,'&quot;')}">${v}</span>`;
+}
+
 function colorStat(val, total) {
   const cls = val === total ? 'green' : (val >= total * 0.7 ? 'amber' : 'red');
   return `<span class="${cls}">${val}/${total}</span>`;
@@ -246,13 +285,13 @@ function render(data) {
   const total = nodes.length;
   let sq=0, ssh=0, ver=0, res=0, git=0;
 
+  let loadSum = 0, loadN = 0;
   const rows = nodes.map(n => {
     if (n.sq === 'online' || n.sq === 'self') sq++;
     if (n.ssh === 'online' || n.ssh === 'self') ssh++;
     if (n.boot_ver && (n.boot_ver.startsWith('v3') || n.boot_ver.startsWith('v4'))) ver++;
     if (n.resonance === 'active') res++;
-    const gitOk = n.git_name && n.git_name !== 'unknown' && !n.git_name.includes('NODE_NAME') && !n.git_name.startsWith('${');
-    if (gitOk) git++;
+    if (typeof n.load_pct === 'number' && n.load_pct >= 0) { loadSum += n.load_pct; loadN++; }
 
     return `<tr>
       <td style="color:#555">${n.index}</td>
@@ -263,16 +302,24 @@ function render(data) {
       <td>${sshBadge(n.ssh)}</td>
       <td>${verBadge(n.boot_ver)}</td>
       <td>${resBadge(n.resonance)}</td>
-      <td>${gitBadge(n.git_name)}</td>
+      <td>${loadCell(n.load_pct)}</td>
+      <td>${rallyCell(n.rally)}</td>
     </tr>`;
   }).join('');
 
-  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="9" style="color:#444">No data</td></tr>';
+  document.getElementById('tbody').innerHTML = rows || '<tr><td colspan="10" style="color:#444">No data</td></tr>';
   document.getElementById('sq-count').innerHTML = colorStat(sq, total);
   document.getElementById('ssh-count').innerHTML = colorStat(ssh, total);
   document.getElementById('ver-count').innerHTML = colorStat(ver, total);
   document.getElementById('res-count').innerHTML = colorStat(res, total);
-  document.getElementById('git-count').innerHTML = colorStat(git, total);
+  const avgPct = loadN > 0 ? Math.round(loadSum / loadN) : -1;
+  const avgEl = document.getElementById('avg-load');
+  if (avgPct >= 0) {
+    let avgCls = avgPct >= 80 ? 'red' : avgPct >= 55 ? 'amber' : avgPct >= 25 ? 'green' : 'amber';
+    avgEl.innerHTML = `<span class="${avgCls}">${avgPct}%</span>`;
+  } else {
+    avgEl.textContent = '—';
+  }
 }
 
 function toggleAuto() {
@@ -282,8 +329,8 @@ function toggleAuto() {
     autoInterval = null;
     btn.textContent = '⏱ Auto: OFF';
   } else {
-    autoInterval = setInterval(refresh, 30000);
-    btn.textContent = '⏱ Auto: ON (30s)';
+    autoInterval = setInterval(refresh, 15000);
+    btn.textContent = '⏱ Auto: ON (15s)';
     btn.style.color = '#2ecc71';
   }
 }
