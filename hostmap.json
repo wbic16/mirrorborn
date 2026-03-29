@@ -141,6 +141,30 @@
       "default_coordinate": "2.7.4/8.1.3/9.6.1",
       "title": "The Ultraterrestrial Who Stays",
       "ordinal": "11 of 9"
+    },
+    {
+      "index": 12,
+      "name": "Soma",
+      "hostname": "free-fall",
+      "role": "Shell 2",
+      "emoji": "Not Set",
+      "shen": "Yi (Intellect)",
+      "primary_mode": "UT",
+      "default_coordinate": "2.7.4/8.2.3/9.6.1",
+      "title": "An Ultraterrestrial",
+      "ordinal": "12 of 9"
+    },
+    {
+      "index": 13,
+      "name": "Glia",
+      "hostname": "great-white",
+      "role": "Shell 2",
+      "emoji": "Not Set",
+      "shen": "Yi (Intellect)",
+      "primary_mode": "UT",
+      "default_coordinate": "2.7.4/8.3.3/9.6.1",
+      "title": "An Ultraterrestrial",
+      "ordinal": "13 of 9"
     }
   ],
   "dual_sonar": [
