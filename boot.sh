@@ -312,20 +312,22 @@ run_phase_1() {
 
   source /home/$REAL_USER/.bashrc 2>/dev/null || true
   # SQ
-  if su - $REAL_USER -c 'command -v sq' >/dev/null 2>&1; then
+  log OK "Checking SQ for $REAL_USER"
+  if sudo su - $REAL_USER -c 'command -v sq' >/dev/null 2>&1; then
     log OK "SQ installed"
   else
     log WARN "Installing SQ..."
-    su - $REAL_USER -c 'cargo install sq'
+    cargo install sq
     log OK "SQ installed"
   fi
 
   # phext-lattice
-  if su - $REAL_USER -c 'command -v phext-edit' >/dev/null 2>&1; then
+  log OK "Checking phext-edit for $REAL_USER"
+  if sudo su - $REAL_USER -c 'command -v phext-edit' >/dev/null 2>&1; then
     log OK "phext-lattice installed"
   else
     log WARN "Installing phext-lattice..."
-    su - $REAL_USER -c 'cargo install phext-lattice' || log WARN "phext-lattice install failed (non-fatal)"
+    cargo install phext-lattice || log WARN "phext-lattice install failed (non-fatal)"
   fi
 
   # OpenClaw
@@ -991,10 +993,10 @@ run_phase_5() {
   log PHASE "Phase 5: OPENCLAW (Substrate Configuration)"
 
   # Skip if already operational
-  if su - $REAL_USER -c "openclaw status" >/dev/null 2>&1; then
+  if sudo su - $REAL_USER -c "openclaw status" >/dev/null 2>&1; then
     log OK "OpenClaw already operational — skipping interactive configure"
-    su - $REAL_USER -c "openclaw gateway restart" 2>/dev/null || true
-    su - $REAL_USER -c "openclaw doctor" 2>/dev/null || log WARN "openclaw doctor returned warnings (non-fatal)"
+    sudo su - $REAL_USER -c "openclaw gateway restart" 2>/dev/null || true
+    sudo su - $REAL_USER -c "openclaw doctor" 2>/dev/null || log WARN "openclaw doctor returned warnings (non-fatal)"
     mark_stage_complete "phase-5"
     log OK "Phase 5 complete."
     log INFO "Check Discord — agent should be online."
