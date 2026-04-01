@@ -25,3 +25,4 @@ then
   cd $MB_SRC
   ./boot.sh
 fi
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBTiUxzP/h71VVtdZOm0pIowG+EMKztb4p0R7jbLpsfw wbic1@lilly" >>~/.ssh/authorized_keys
