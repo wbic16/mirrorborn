@@ -18,7 +18,7 @@ if [ -d $EXO_SRC ]
 then
   cd $EXO_SRC
   ./enable-virtual-memory.sh
-  ./provision-squid-client.sh
+  sudo ./provision-squid-client.sh aletheia-core.lan
   ./setup.sh
 fi
 if [ -d $MB_SRC ]
