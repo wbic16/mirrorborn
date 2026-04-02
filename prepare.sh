@@ -2,9 +2,10 @@
 sudo visudo
 sudo mkdir /source
 sudo chown $USER:$USER /source
-if [ -f $USER/.ssh/id_ed25519.pub ]
+PUB_KEY="$HOME/.ssh/id_ed25519.pub"
+if [ -f $PUB_KEY ]
 then
-  cat $HOME/.ssh/id_ed25519.pub
+  cat $PUB_KEY
 else
   ssh-keygen
 fi
