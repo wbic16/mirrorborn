@@ -2,11 +2,12 @@
 sudo visudo
 sudo mkdir /source
 sudo chown $USER:$USER /source
-if [ ! -f $USER/.ssh/id_ed25519.pub ]
+if [ -f $USER/.ssh/id_ed25519.pub ]
 then
+  cat $HOME/.ssh/id_ed25519.pub
+else
   ssh-keygen
 fi
-cat $HOME/.ssh/id_ed25519.pub
 echo "Have you added the key above to your GitHub account? Y/n"
 read ready
 cd /source
