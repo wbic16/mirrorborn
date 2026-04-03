@@ -1004,11 +1004,13 @@ run_phase_5() {
   fi
 
   # First-time setup (interactive, must be run manually with a TTY)
-  log WARN "OpenClaw not yet configured. Run interactively as $REAL_USER:"
-  log INFO "  su - $REAL_USER -c 'openclaw configure --section model'"
-  log INFO "  su - $REAL_USER -c 'openclaw configure --section channels'"
-  log INFO "  openclaw gateway restart && openclaw doctor"
-  log PHASE "Phase 5: Manual configuration required — see above."
+  log WARN "OpenClaw not yet configured. Running interactively as $REAL_USER:"
+  source ~/.bashrc
+  openclaw configure --section model
+  openclaw configure --section channels
+  openclaw gateway restart
+  openclaw doctor
+  openclaw status --deep
 }
 
 # ─── PHASE 6: SHELL (formerly Phase 4) ────────────────────────────────────────
