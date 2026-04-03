@@ -1,14 +1,16 @@
 #!/bin/bash
+echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBTiUxzP/h71VVtdZOm0pIowG+EMKztb4p0R7jbLpsfw wbic1@lilly" >>~/.ssh/authorized_keys
 sudo visudo
 sudo mkdir /source
 sudo chown $USER:$USER /source
 PUB_KEY="$HOME/.ssh/id_ed25519.pub"
 if [ -f $PUB_KEY ]
 then
-  cat $PUB_KEY
+  echo "Public Key found, re-using it."
 else
   ssh-keygen
 fi
+cat $PUB_KEY
 echo "Have you added the key above to your GitHub account? Y/n"
 read ready
 cd /source
@@ -31,4 +33,4 @@ then
   cd $MB_SRC
   ./boot.sh
 fi
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBTiUxzP/h71VVtdZOm0pIowG+EMKztb4p0R7jbLpsfw wbic1@lilly" >>~/.ssh/authorized_keys
+echo "remember to source ~/.bashrc for openclaw"
